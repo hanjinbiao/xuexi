@@ -1,0 +1,94 @@
+案例练习,准备:
+            rht-vmctl  reset  classroom
+            rht-vmctl  reset  server
+	       rht-vmctl  reset  desktop
+######################################################
+
+案例1:为虚拟机 server 配置以下静态地址参数
+– 主机名:server0.example.com
+– IP地址:172.25.0.180
+– 子网掩码:255.255.255.0
+– 默认网关:172.25.0.254
+– DNS服务器:172.25.254.254
+
+
+案例2：真机上操作：永久别名与vim的使用
+  1. 定义一个永久别名（修改/root/.bashrc文件)，执行c可以实现还原虚拟机classroom
+  2. 定义一个永久别名（修改/root/.bashrc文件)，执行s可以实现还原虚拟机server
+  3. 定义一个永久别名（修改/root/.bashrc文件)，执行d可以实现还原虚拟机Desktop
+  4. 定义一个永久别名（修改/root/.bashrc文件)，执行gos可以远程管理server
+  5. 定义一个永久别名（修改/root/.bashrc文件)，执行god可以远程管理desktop
+
+
+
+案例3：虚拟机Server上操作：复制、删除、移动及vim文本编辑器
+  1. 在目录/mnt下创建一个子目录public 
+  2. 在目录/mnt/public 创建文件linux.txt,利用vim写入内容 Study Linux
+  3. 将/mnt/public/linux.txt文件复制到/root目录下，同时 改名为 study.txt
+  4. 利用vim 修改文件/etc/hostname将其原有内容全部删除，写入新的内容为www.qq.com
+  5. 将/etc/passwd 、/etc/resolv.conf、/etc/hostname 同时拷贝到/mnt/public/目录下
+  6. 将文件 /mnt/public/hostname 重改名为 stu.txt 
+  7. 创建目录结构/mnt/public/test/vm
+  7. 将目录 /boot内容中以 vm 开头的 复制到/mnt/public/test/vm目录下 
+  8. 将/home目录复制到/mnt/public/test/目录下 
+
+案例4：虚拟机Server上操作：复制、删除、移动及vim文本编辑器
+  1. 创建目录结构/study/nsd01 
+  2. 在目录/study/nsd01 创建文件abc.txt,利用vim写入内容 abc.tedu.cn
+  3. 将/study/nsd01/abc.txt文件复制到/opt目录下，同时 改名为 test.txt
+  4. 利用vim 修改文件/etc/hostname将其原有内容全部删除，写入新的内容为www.sina.com
+  5. 将/etc/passwd 、/etc/resolv.conf、/etc/hostname 同时拷贝到/study/nsd01/目录下
+  6. 将文件 /study/nsd01/hostname 重改名为 haxi.txt 
+  7. 创建目录结构/root/vm
+  7. 将目录 /boot内容中以 vm 开头的 复制到/root/vm目录下 
+  8. 将/home目录复制到/root/vm目录下 
+
+
+
+案例4：虚拟机Server上操作：ls与cat、head
+  1. 显示根目录下所有内容
+  2. 显示/etc目录下所有已tab结尾的文件
+  3. 显示/etc/resolv.conf文件的详细属性并加上易读的单位
+  4. 显示/etc/sysconfig/network-scripts/ifcfg-eth0文件的详细属性并加上易读的单位
+  5. 显示/etc/sysconfig/network-scripts/ifcfg-eth0文件的头4行内容
+ 
+
+
+
+案例4：虚拟机Server上操作：搭建Yum仓库
+
+为 server0 指定可用的 yum 软件源
+– YUM软件库的地址为 http://classroom.example.com/content/rhel7.0/x86_64/dvd/
+– 将此配置为虚拟机 server0 的默认软件仓库
+– 确认可用的仓库列表
+– 利用yum仓库安装sssd软件
+– 利用yum仓库安装xeyes软件
+
+
+案例4：虚拟机Desktop上操作：搭建Yum仓库
+
+为 虚拟机Desktop指定可用的 yum 软件源
+– YUM软件库的地址为 http://classroom.example.com/content/rhel7.0/x86_64/dvd/
+
+– 确认可用的仓库列表
+– 利用yum仓库安装sssd软件
+– 利用yum仓库安装xeyes软件
+– 运行xeyes命令查看效果
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

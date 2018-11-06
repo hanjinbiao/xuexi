@@ -1,0 +1,324 @@
+使用教学虚拟机
+
+• 每个学员机上有三台预先配置好的虚拟机
+ – server —— 作为练习用服务器
+ – desktop —— 作为练习用客户机
+ – classroom —— 提供网关/DNS/软件素材/DHCP服务等资源
+
+  优先开机classroom，再去开启server、desktop  
+
+一、真机还原命令：优先还原classroom
+
+[root@room9pc01 ~]# rht-vmctl reset classroom
+[root@room9pc01 ~]# rht-vmctl reset server[root@room9pc01 ~]# rht-vmctl reset desktop
+
+二、进入 虚拟机server 与  虚拟机desktop,检测Yum是否可用
+
+# yum  clean  all    #清空缓存
+# yum  repolist      #列出仓库信息
+
+###################################################
+扇区的大小为512字节
+
+分区规划及使用
+
+一块硬盘的“艺术”之旅
+• 识别硬盘 => 分区规划=> 格式化 => 挂载使用
+    毛坯楼层 => 打隔断 =>  装修 => 入驻
+
+一、识别硬盘
+[root@server0 ~]# lsblk
+ NAME    SIZE  TYPE  MOUNTPOINT
+ vda      10G   disk 
+ └─vda1  10G   part  /
+ vdb      10G   disk 
+
+二、分区规划
+
+• MBR/msdos 分区模式
+  – 分区类型：主分区、扩展分区、逻辑分区
+  – 1~4个主分区,或者  3个主分区+1个扩展分区(n个逻辑分区)
+  – 最大支持容量为 2.2TB 的磁盘
+  – 扩展分区不能格式化
+
+   /dev/sda5：SCSI接口设备第一块硬盘的第一个逻辑分区
+
+• GPT分区模式，最大到18EB
+    1EB=1000PB
+    1PB=1000TB
+
+[root@server0 ~]# fdisk /dev/vdb
+ n 创建新的分区---->回车---->回车--->回车--->在last结束时 +2G
+ p 查看分区表
+ n 创建新的分区---->回车---->回车--->回车--->在last结束时 +1G
+ d 删除分区
+ w 保存并退出
+
+[root@server0 ~]# lsblk
+[root@server0 ~]# ls  /dev/vdb[1-2]
+
+
+三、格式化，赋予空间 文件系统（规则）
+
+ # mkfs.ext4 /dev/vdb1   #格式化ext4文件系统
+ # blkid /dev/vdb1       #查看文件系统类型
+ # mkfs.xfs /dev/vdb2    #格式化xfs文件系统
+ # blkid /dev/vdb2       #查看文件系统类型
+
+四、挂载使用分区
+[root@server0 ~]# mkdir /mypart1  /mypart2
+[root@server0 ~]# mount /dev/vdb1  /mypart1
+[root@server0 ~]# mount /dev/vdb2  /mypart2
+[root@server0 ~]# df  -h   #显示已经挂载的设备使用情况
+
+五、开机自动挂载
+      配置/etc/fstab
+  设备路径        挂载点        类型     参数      备份标记    检测顺序
+
+[root@server0 ~]# tail -2 /etc/fstab 
+/dev/vdb1  /mypart1 ext4  defaults  0 0
+/dev/vdb2  /mypart2 xfs  defaults   0 0
+[root@server0 ~]# umount /mypart1
+[root@server0 ~]# umount /mypart2
+[root@server0 ~]# df -h
+[root@server0 ~]# mount -a
+   检测/etc/fstab开机自动挂载配置文件,格式是否正确
+   检测/etc/fstab中,书写完成,但当前没有挂载的设备,进行挂载
+[root@server0 ~]# df -h
+
+六、继续分区
+[root@server0 ~]# fdisk  /dev/vdb
+   p 查看分区表
+   n 创建主分区----->回车----->回车---->回车----->在last结束时 +1G
+   p 查看分区表
+   n 创建扩展分区 
+               ----->回车---->起始回车----->结束回车  将所有空间给扩展分区
+   p 查看分区表
+   n 创建逻辑分区----->起始回车------>结束+1G
+   n 创建逻辑分区----->起始回车------>结束+1G
+   p 查看分区表
+   w 保存并退出
+[root@server0 ~]# lsblk 
+[root@server0 ~]# partprobe  #刷新  新的分区表
+[root@server0 ~]# lsblk 
+############################################
+总结：
+  1.识别硬盘    lsblk
+  2.划分分区    fdisk
+  3.刷新分区表  partprobe
+  4.格式化      mkfs.ext4  mkfs.xfs---->blkid查看文件系统
+  5.利用mount挂载使用  ----> /etc/fstab完成开机自动挂载
+
+################################################
+为虚拟机添加新的硬盘60G
+ 1.关闭虚拟机server
+ 2.利用图形 为虚拟机server添加60G硬盘
+
+开机之后：
+ [root@room9pc01 ~]# gos
+ [root@server0 ~]# lsblk 
+
+ [root@server0 ~]# ls /dev/vdc
+
+################################################
+新加的60G硬盘进行分区
+ 三个主分区10G，划分扩展分区， 两个逻辑分区10G
+[root@server0 ~]# fdisk  /dev/vdc 
+   p 查看分区表
+   n 创建主分区----->回车----->回车---->回车----->在last结束时 +10G
+         连续创建3个10G主分区
+      ......
+   n 创建扩展分区 
+         ----->回车---->起始回车----->结束回车  将所有空间给扩展分区
+   p 查看分区表
+   n 创建逻辑分区----->起始回车------>结束+10G
+   n 创建逻辑分区----->起始回车------>结束+10G
+   p 查看分区表
+   w 保存并退出
+[root@server0 ~]# lsblk
+
+###############################################
+LVM逻辑卷的管理
+
+    作用：1.可以整合分散的空间  2.容量大小可以扩大
+    – 零散空闲存储 ---->整合的虚拟磁盘 ---->虚拟的分区
+        物理卷 PV       卷组 VG        逻辑卷LV
+
+  将众多的物理卷( PV),组成卷组(VG),再从卷组中划分出逻辑卷(LV)
+
+###################################################
+一、创建逻辑卷
+
+ successfully:成功
+
+1.直接创建卷组
+ 格式：vgcreate  卷组的名    设备路径1  设备路径2 .......
+
+ # vgcreate  systemvg  /dev/vdc1  /dev/vdc2
+ # vgs    #查看卷组信息
+ # pvs    #查看物理卷信息
+
+2.通过卷组划分逻辑卷
+格式：lvcreate -n 逻辑卷名  -L 逻辑卷大小   卷组名
+ # lvcreate -n mylv -L 16G systemvg
+ # lvs     #查看逻辑卷信息                 
+ # vgs           
+ # ls -l /dev/systemvg/mylv
+
+ # mkfs.ext4  /dev/systemvg/mylv  #格式化ext4
+ # blkid /dev/systemvg/mylv       #查看设备文件系统
+
+ # vim /etc/fstab 
+ /dev/systemvg/mylv  /lvm   ext4   defaults 0 0
+
+ # mount -a  #检测是否书写正确
+ # df  -h    #查看挂载情况
+
+#################################################
+逻辑卷的扩展
+
+一、卷组有足够的剩余空间
+1.扩展空间的大小
+[root@server0 ~]# vgs
+[root@server0 ~]# lvextend -L 18G /dev/systemvg/mylv 
+[root@server0 ~]# lvs
+
+2.扩展文件系统的大小
+   resize2fs:扩展ext4文件系统
+   xfs_growfs:扩展xfs文件系统
+[root@server0 ~]# df  -h
+[root@server0 ~]# resize2fs /dev/systemvg/mylv 
+[root@server0 ~]# df  -h
+
+二、卷组没有足够的剩余空间
+
+1.扩展卷组
+[root@server0 ~]# vgextend systemvg /dev/vdc3
+[root@server0 ~]# vgs
+
+2.扩展空间的大小
+[root@server0 ~]# vgs
+[root@server0 ~]# lvextend -L 25G /dev/systemvg/mylv 
+[root@server0 ~]# lvs
+
+3.扩展文件系统的大小
+   resize2fs:扩展ext4文件系统
+[root@server0 ~]# df  -h
+[root@server0 ~]# resize2fs /dev/systemvg/mylv 
+[root@server0 ~]# df  -h
+
+#################################################
+了解内容：缩减空间
+     ext4文件系统支持缩减
+     xfs文件系统不支持缩减
+
+#################################################
+卷组划分空间的单位：PE   默认4M
+1.查看卷组PE大小
+ [root@server0 ~]# vgdisplay systemvg 
+
+ PE Size               4.00 MiB
+
+2.修改方式
+  卷组已经存在，修改PE的大小
+# vgchange -s PE大小   卷组名
+
+  创建卷组的时候设置PE大小
+# vgcreate  -s PE大小   卷组名   设备路径
+
+  创建逻辑卷使用PE的个数创建
+
+# lvcreate -l PE的个数  -n 逻辑卷   卷组名
+
+
+
+
+
+2. 基于刚建立的 2000MiB 分区构建新的 LVM 存储
+– 新的逻辑卷命名为 database,大小为50个物理扩展单元
+(Physical Extent),属于 datastore 卷组
+– 在 datastore 卷组中的所有逻辑卷,其物理扩展单元
+(Physical Extent)的大小为16MiB
+– 使用  EXT3 文件系统对逻辑卷 database 格式化,此逻
+辑卷应该在开机时自动挂载到 /mnt/database 目录
+
+# vgchange -s 16M systemvg  
+# lvcreate -L 800M -n database systemvg
+# lvcreate -l 50 -n lvtest02 systemvg
+# lvs
+
+###############################################
+1.查看卷组PE大小
+ [root@server0 ~]# vgdisplay systemvg 
+ [root@server0 ~]# vgchange -s 1M  systemvg 
+ [root@server0 ~]# vgdisplay systemvg 
+
+2.利用PE的个数创建逻辑卷
+ [root@server0 ~]# lvcreate -l 80 -n lvtest systemvg
+ [root@server0 ~]# lvs
+
+#################################################
+逻辑卷的删除
+1.先删除逻辑卷本身（先卸载）
+2.再删除卷组
+3.最后删除物理卷（可选）
+
+# lvremove /dev/systemvg/mylv     #删除逻辑卷
+
+# umount /lvm
+# lvremove /dev/systemvg/mylv 
+# lvs
+
+# lvremove /dev/systemvg/lvtest
+# lvs
+
+# vgremove systemvg    #删除卷组
+# vgs
+
+# pvremove /dev/vdc[1-3]   #删除物理卷
+# pvs
+################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

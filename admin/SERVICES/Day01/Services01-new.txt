@@ -1,0 +1,510 @@
+一、搭建新的教学环境
+
+真机上操作:新建两台虚拟机
+[root@room9pc01 ~]# clone-vm7 
+Enter VM number: 8
+
+[root@room9pc01 ~]# clone-vm7 
+Enter VM number: 9
+
+利用鼠标图形将虚拟机名字，修改为A与B，进行开机启动
+
+  利用root用户，密码为 123456进入新建两台虚拟机
+  
+虚拟机A:作为练习使用的服务端
+ 1.配置永久的主机名:svr7.tedu.cn
+ 2.配置eth0永久的IP地址:192.168.4.7/24
+
+
+虚拟机B:作为练习使用的客户端
+ 1.配置永久的主机名:pc207.tedu.cn
+ 2.配置eth0永久的IP地址:192.168.4.207/24
+
+##############################################
+二、为新的教学环境搭建Yum仓库
+
+真机上搭建服务端 ：
+  1.众多的软件包   2.仓库数据文件  3.搭建FTP服务共享内容
+
+  1）搭建FTP服务
+  [root@room9pc01 ~]# rpm -q vsftpd
+  vsftpd-3.0.2-22.el7.x86_64
+
+  [root@room9pc01 ~]# systemctl restart vsftpd
+  [root@room9pc01 ~]# systemctl enable vsftpd
+   2)挂载光盘内容到/var/ftp/rhel7
+  [root@room9pc01 ~]# ls /var/ftp/rhel7/
+  [root@room9pc01 ~]# vim /etc/fstab 
+  /var/lib/libvirt/images/iso/rhel-server-7.4-
+  x86_64-dvd.iso /var/ftp/rhel7  iso9660 defaults 0 0
+
+   3)最终测试
+  # firefox  ftp://192.168.4.254/rhel7
+
+客户端：两台虚拟机A与虚拟机B
+
+[root@svr7 ~]# vim /etc/yum.repos.d/rhel7.repo
+[rhel7]
+name=rhel7.4
+baseurl=ftp://192.168.4.254/rhel7
+enabled=1
+gpgcheck=0
+
+[root@svr7 ~]# yum -y install httpd
+
+###############################################
+真机制作别名
+[root@room9pc01 ~]# head -3 /root/.bashrc 
+# .bashrc
+alias goa='ssh -X root@192.168.4.7' 
+alias gob='ssh -X root@192.168.4.207'
+[root@room9pc01 ~]# 
+
+###############################################
+利用真机clone-vm7产生产两台虚拟机，利用root密码123456
+
+ 1.搭建虚拟机C服务端
+    要求：配置永久主机名svr8.tedu.cn
+	     配置eth0永久 IP地址：192.168.4.8/24
+             使用真机ftp服务器作为Yum源
+
+ 2.搭建虚拟机D客户端
+    要求：配置永久主机名pc208.tedu.cn
+	     配置eth0永久 IP地址：192.168.4.208/24
+             使用真机ftp服务器作为Yum源
+
+################################################
+目录结构
+• 认识Linux的目录层次:
+– man hier
+
+常见一级目录的用途
+主要用途
+  /boot       存放系统引导必需的文件,包括内核、启动配置
+  /bin、/sbin 存放各种命令程序
+  /dev 存放硬盘、键盘、鼠标、光驱等各种设备文件
+  /etc 存放Linux系统及各种程序的配置文件
+  /root、/home/用户名 分别是管理员root、普通用户的默认家目录
+  /var   存放日志文件、邮箱目录等经常变化的文件
+  /proc  存放内存中的映射数据,不占用磁盘
+  /tmp   存放系统运行过程中使用的一些临时文件
+
+
+权限的数值表示
+• 权限的数值化
+– 基本权限:r = 4,w = 2,x = 1
+– 附加权限:SUID = 4,SGID = 2,Sticky Bit = 1
+• 采用数值形式设置权限
+– chmod [-R] nnn 文档...
+– chmod [-R] xnnn 文档...
+
+[root@svr7 /]# mkdir /nsd01
+[root@svr7 /]# ls -ld /nsd01     
+
+[root@svr7 /]# chmod 700 /nsd01
+[root@svr7 /]# ls -ld /nsd01
+
+[root@svr7 /]# chmod 007 /nsd01
+[root@svr7 /]# ls -ld /nsd01
+
+[root@svr7 /]# chmod 750 /nsd01
+[root@svr7 /]# ls -ld /nsd01
+
+[root@svr7 /]# chmod 755 /nsd01
+[root@svr7 /]# ls -ld /nsd01
+
+############################################
+历史命令
+• 管理/调用曾经执行过的命令
+– history:查看历史命令列表
+– history -c:清空历史命令
+– !n:执行命令历史中的第n条命令
+– !str:执行最近一次以str开头的历史命令
+
+• 调整历史命令的数量
+[root@svr7 ~]# vim /etc/profile
+  HISTSIZE=1000    //默认记录1000条
+
+[root@svr7 /]# history -c
+[root@svr7 /]# cat /etc/redhat-release 
+[root@svr7 /]# uname -r
+[root@svr7 /]# ifconfig | head -2
+[root@svr7 /]# history
+
+[root@svr7 /]# !cat   #执行历史命令最近一条以cat开头的命令
+[root@svr7 /]# !u
+
+################################################
+实用小命令工具
+• du,统计文件的占用空间
+– du [选项]... [目录或文件]...
+– -s:只统计每个参数所占用的总空间大小
+– -h:提供易读容量单位(K、M等)
+
+[root@svr7 /]# du -sh /
+
+[root@svr7 /]# du -sh /root  /etc/  /boot  /home
+[root@svr7 /]# du -sh  /*
+
+#################################################
+• date,查看/调整系统日期时间
+ – date +%F、date +%R
+ – date +"%Y-%m-%d %H:%M:%S"
+ – date -s "yyyy-mm-dd HH:MM:SS"  #修改时间
+
+##############################################
+vim编辑技巧
+
+命令模式操作
+光标跳转
+	Home 键 或 ^键、数字 0      跳转到行首
+	End 键 或“$”键                   跳转到行尾
+    1G 或 gg               跳转到文件的首行
+    G                     跳转到文件的末尾行
+ 
+复制/粘贴/删除
+     yy、#yy 		复制光标处的一行、#行
+	 p、P 			粘贴到光标处之后、之前
+	 x 或 Delete键 	删除光标处的单个字符
+	 dd、#dd 		删除光标处的一行、#行
+     d^ 			从光标处之前删除至行首
+	 d$ 			从光标处删除到行尾
+     C(大写)          从光标处删除到行尾，进入插入模式
+
+[root@svr7 ~]# cp /etc/passwd /opt/abc
+[root@svr7 ~]# vim /opt/abc
+
+
+	/word 	  向后查找字符串“word”
+	n、N 	  跳至后/前一个结果
+	u 		  撤销最近的一次操作
+	Ctrl + r   取消前一次撤销操作(反撤销)
+	ZZ(大写)   保存修改并退出
+
+##############################################
+末行模式操作
+
+保存/退出/文件操作
+   :q! 		 放弃已有更改后强制退出
+   :wq 或 :x   保存已有修改后退出
+   :r /etc/filesystems  读入其他文件内容
+
+[root@svr7 ~]# echo 123456 > /opt/1.txt
+[root@svr7 ~]# echo abcdef > /opt/a.txt
+[root@svr7 ~]# vim /opt/a.txt
+           ：r   /opt/1.txt   #读入/opt/1.txt文件内容
+           ：r   /etc/fstab   #读入/etc/fstab文件内容
+
+字符串替换
+	:s/root/admin 		 替换当前行第一个“root”
+	:s/root/admin/g 	     替换当前行所有的“root”
+	:1,11 s/root/admin/g  替换第1-11行所有的“root”
+	:% s/root/admin/g 	 替换文件内所有的root
+
+[root@svr7 ~]# cp /etc/passwd  /opt/test
+[root@svr7 ~]# vim /opt/test
+
+     sed 非交互式编辑器        vim 交互式编辑器 
+
+开关参数的控制
+	:set nu|nonu   显示/不显示行号
+	:set ai|noai   启用/关闭自动缩进
+
+##################################################
+vim常见问题：缓存文件(交换文件),删除交换文件
+
+[root@svr7 ~]# rm -rf /opt/.1.txt.swp 
+[root@svr7 ~]# vim /opt/1.txt 
+
+##################################################
+自定义Yum仓库
+
+1.具备互联网下载的包，真机传递tools.tar.gz到虚拟机A
+     ssh+cp=scp
+ 
+# scp /root/桌面/tools.tar.gz  root@192.168.4.7:/root         
+
+2.虚拟机A解tar包
+[root@svr7 ~]# tar -xf /root/tools.tar.gz -C / 
+[root@svr7 ~]# ls /
+[root@svr7 ~]# ls /tools/
+[root@svr7 ~]# ls /tools/other/
+
+3.运行createrepo生成仓库数据文件
+[root@svr7 ~]# createrepo  /tools/other/
+[root@svr7 ~]# ls  /tools/other/
+
+4.书写客户端配置文件
+[root@svr7 ~]# vim /etc/yum.repos.d/rhel7.repo 
+ [myrpm]
+ name=rhel7.4
+ baseurl=file:///tools/other  #指定本机为Yum服务端
+ enabled=1
+ gpgcheck=0
+
+[root@svr7 ~]# yum repolist 
+################################################
+
+[root@svr7 ~]# yum -y install sl
+ 
+查询rpm包安装的清单
+[root@svr7 ~]#  rpm -ql   sl
+
+[root@svr7 ~]#  yum -y install oneko
+
+[root@svr7 ~]#  oneko  &   #放入后台运行
+
+[root@svr7 ~]#  killall oneko  #杀死所有的oneko
+
+#################################################
+源码编译安装
+
+ rpm包： rpm -ivh    yum 
+
+  源码包-----运行gcc与make--->可以执行的程序---》运行安装即可
+
+   源码包的优势：可以选择安装的功能及路径，更加的灵活
+
+虚拟机A：
+步骤1: 安装gcc与make
+[root@svr7 ~]# yum  -y   install   gcc
+
+步骤2: tar解包,释放源代码至指定目录
+# tar -xf  /tools/inotify-tools-3.13.tar.gz  -C  /
+# ls  /
+# ls  /inotify-tools-3.13/
+
+步骤3:  ./configure  配置,指定安装目录/功能模块等选项
+                                   作用：检测本机是否安装gcc
+
+# cd /inotify-tools-3.13/
+# ./configure  --prefix=/opt/myrpm   #指定安装位置
+
+
+常见错误提示：没有安装gcc
+checking for gcc... no
+checking for cc... no
+checking for cl.exe... no
+configure: error: no acceptable C compiler found in $PATH
+
+步骤4: make 编译,生成可执行的二进制程序文件
+ # cd /inotify-tools-3.13/
+ # make 
+
+步骤5: make install 安装,将编译好的文件复制到安装目录
+ # cd /inotify-tools-3.13/
+ # make install
+ # ls /opt/
+ # ls /opt/myrpm
+ # ls /opt/myrpm/
+ # ls /opt/myrpm/bin/
+ 
+###############################################
+
+[root@svr7 ~]# man  5  passwd
+
+               5:配置文件的帮助信息
+
+################################################
+zip归档工具,跨平台的压缩工具
+
+
+• 归档+压缩操作
+– zip [-r] 备份文件.zip 被归档的文档...
+
+• 释放归档+解压操作
+– unzip 备份文件.zip [-d 目标文件夹]
+
+[root@svr7 /]# zip -r /opt/test.zip  /root/  /boot/
+[root@svr7 /]# ls /opt
+[root@svr7 /]# unzip /opt/test.zip  -d  /mnt/
+[root@svr7 /]# ls  /mnt/
+
+[root@svr7 /]# zip -r /opt/nsd.zip  /etc/passwd 
+[root@svr7 /]# ls /opt 
+[root@svr7 /]# unzip /opt/nsd.zip  -d  /mnt/
+[root@svr7 /]# ls  /mnt/
+
+[root@svr7 /]# zip -r /opt/abc.zip /home
+[root@svr7 /]# ls /opt 
+[root@svr7 /]# unzip /opt/abc.zip  -d  /mnt/
+[root@svr7 /]# ls  /mnt/
+
+#################################################
+ 软连接与硬连接
+
+ 快捷方式(软连接)：ln -s  /路径/源文档   /路径/快捷方式的名
+ 快捷方式(硬连接)：ln   /路径/源文档   /路径/快捷方式的名
+
+[root@svr7 /]# cat /etc/redhat-release 
+
+[root@svr7 /]# ln -s /etc/redhat-release  /abc
+                                
+[root@svr7 /]# ls /
+[root@svr7 /]# ls -l /abc
+[root@svr7 /]# cat /abc 
+
+
+############################################
+[root@svr7 /]# rm -rf /opt/*
+[root@svr7 /]# cd /opt/
+[root@svr7 opt]# echo 123456 > /opt/A.txt
+[root@svr7 opt]# ln -s /opt/A.txt /opt/B.txt
+[root@svr7 opt]# ls
+A.txt  B.txt
+[root@svr7 opt]# ln  /opt/A.txt /opt/C.txt
+[root@svr7 opt]# ls
+[root@svr7 opt]# ls -i
+
+##############################################
+ i节点编号：标识硬盘上一块存储空间的编号
+
+   读取数据1.txt：1.txt----》i节点-----》数据对应区域 取数据
+
+  软连接（常用）：快捷方式可以跨分区，源文件可以是目录
+  硬连接：快捷方式不可以跨分区，源文件不可以是目录
+
+  软连接独占一个i节点编号，硬连接与源文件i节点编号一致
+
+##############################################
+
+
+
+     lisi----》38             lisi  38房间
+ 
+     tom----》39              39房间  纸条 其实我是lisi 
+
+#################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

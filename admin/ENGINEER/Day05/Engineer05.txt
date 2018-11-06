@@ -1,0 +1,390 @@
+使用教学虚拟机
+
+• 每个学员机上有三台预先配置好的虚拟机
+ – server —— 作为练习用服务器
+ – desktop —— 作为练习用客户机
+ – classroom —— 提供网关/DNS/软件素材/DHCP服务等资源
+
+  优先开机classroom，再去开启server、desktop  
+
+一、真机还原命令：优先还原classroom
+
+[root@room9pc01 ~]# rht-vmctl reset classroom
+[root@room9pc01 ~]# rht-vmctl reset server[root@room9pc01 ~]# rht-vmctl reset desktop
+
+二、进入 虚拟机server 与  虚拟机desktop,检测Yum是否可用
+
+# yum  clean  all    #清空缓存
+# yum  repolist      #列出仓库信息
+
+##############################################
+环境的初步设置：修改防火墙默认区域为允许所有
+虚拟机Server
+ # firewall-cmd --set-default-zone=trusted
+
+虚拟机Desktop
+ # firewall-cmd --set-default-zone=trusted 
+
+###############################################
+iSCSI网络磁盘  默认端口：3260
+
+• Internet SCSI,网际SCSI接口
+– 一种基于C/S架构的虚拟磁盘技术
+– 服务器提供磁盘空间,客户机连接并当成本地磁盘使用
+
+• backstore,后端存储（大冰箱）
+– 对应到服务端提供实际存储空间的设备,需要起一个
+管理名称
+• target,磁盘组（木质包装）
+– 是客户端的访问目标,作为一个框架,由多个lun组成
+
+• lun,逻辑单元（大冰箱纸制包装）放入（木质包装）
+– 每一个lun需要关联到某一个后端存储设备,在客户端
+会视为一块虚拟硬盘
+
+       大冰箱 -----> 纸制包装 -----> 木质包装
+
+• ISCSI Qualified Name(iqn) 名称规范
+– iqn.yyyy-mm.倒序域名:自定义标识
+–  用来识别 target 磁盘组,也用来识别客户机身份
+
+• 名称示例
+– iqn.2016-02.com.example:server0
+– iqn.2016-02.com.example:desktop0
+
+服务端：虚拟机Server
+一、划分新的分区
+[root@server0 ~]# lsblk 
+[root@server0 ~]# fdisk /dev/vdb
+  划分一个5G的主分区
+
+[root@server0 ~]# lsblk 
+[root@server0 ~]# ls /dev/vdb1
+
+二、部署iSCSI共享存储
+ 1.安装软件targetcli（服务端软件）
+[root@server0 ~]# yum -y install targetcli
+
+ 2.运行targetcli可以再交互式界面，配置iSCSI共享存储
+[root@server0 ~]#  targetcli
+
+ A:创建与命名后端存储（大冰箱----->纸制包装）
+ /> backstores/block create name=nsd dev=/dev/vdb1
+       后端存储      块设备     创建      命名            具体设备
+ /> ls
+
+ B:创建target,磁盘组（木质包装）
+ /> iscsi/ create iqn.2018-09.com.example:server0
+        
+ /> ls
+
+ C:lun,逻辑单元（大冰箱纸制包装）放入（木质包装）
+ /> iscsi/iqn.2018-09.com.example:server0/tpg1/ 
+    luns     create   /backstores/block/nsd 
+
+ /> ls
+
+ D:配置访问控制，设置访问服务时，客户端声称的名字
+ /> iscsi/iqn.2018-09.com.example:server0/tpg1/acls 
+    create  iqn.2018-09.com.example:desktop0
+
+ /> ls
+
+ E:客户端访问本机的IP地址及端口
+  [root@server0 ~]# targetcli
+  /> iscsi/iqn.2018-09.com.example:server0/tpg1/ 
+   portals create 172.25.0.11
+
+  />  ls
+  />  exit  退出
+
+三、重起服务target
+[root@server0 ~]# systemctl restart target
+[root@server0 ~]# systemctl enable target
+
+客户端：虚拟机Desktop
+一、安装所需软件包iscsi-initiator-utils
+   yum安装能够补全包名：
+              1、前提由Yum的缓存（yum repolist）
+              2、当前系统没有安装的，才可以补全
+
+[root@desktop0 ~]# rpm -q iscsi-initiator-utils
+
+二、修改配置文件，用来指定客户端声称的名字
+
+  1.修改配置文件
+  # vim  /etc/iscsi/initiatorname.iscsi 
+   InitiatorName=iqn.2018-09.com.example:desktop0
+
+  2.需重启服务 iscsid 以更新IQN标识
+ [root@desktop0 ~]# systemctl restart iscsid
+  Warning: Unit file of iscsid.service changed on  
+  disk, 'systemctl daemon-reload' recommended.
+ [root@desktop0 ~]# systemctl daemon-reload
+ [root@desktop0 ~]# systemctl restart iscsid
+
+三、发现服务端共享存储
+
+ 1.书写发现的命令,   参考# man iscsiadm   搜索全文 /example
+
+   Ctrl    - ：减小字体
+   Ctrl   Shift   + ：变大字体
+
+ # iscsiadm --mode discoverydb --type sendtargets --
+   portal 172.25.0.11  --discover
+
+  2.本机识别服务端共享 
+  [root@desktop0 ~]# lsblk 
+  [root@desktop0 ~]# systemctl restart iscsi
+  [root@desktop0 ~]# lsblk 
+  [root@desktop0 ~]# systemctl enable iscsi
+
+#################################################
+数据库服务基础
+
+什么是数据库 : 存放数据的仓库
+
+  在数据库中，有很多的库，在每一个库中会有很多的表格
+
+一、部署mariadb数据库服务器，默认端口 3306
+• RHEL7 中的 MariaDB 相关包
+1.安装mariadb-server:提供服务端有关的系统程序
+[root@server0 ~]# yum -y install mariadb-server
+
+2.重起服务
+[root@server0 ~]# systemctl restart mariadb
+[root@server0 ~]# systemctl enable mariadb
+
+二、数据库简单的使用
+[root@server0 ~]# mysql
+  > show   databases;         #显示所有的库
+
+  > create  database  nsd1808;   #创建nsd1808库
+  > show  databases;             #显示所有的库
+  > drop  database  nsd1808;     #删除nsd1808库
+
+  > show  databases;    #显示所有的库
+  > exit                #退出
+  Bye
+[root@server0 ~]# mysql
+  > create  database  nsd;  #创建nsd库
+  > show    databases;      #显示所有的库
+  
+三、为数据库管理员设置密码
+
+   数据库管理员root，用户信息存储mysql库中表user
+
+   系统管理员root，用户信息存储/etc/passwd
+
+• 为数据库账号修改密码
+ – mysqladmin [-u用户名] [-p[旧密码]] password '新密码'
+
+    在Linux系统命令行，为数据库管理员设置密码123
+  # mysqladmin  -u  root  password  '123' 
+
+  # mysql -u root -p         #交互式登陆
+  Enter password: 
+
+  # mysql -u root -p123      #非交互式登陆
+
+命令行操作已知旧密码，修改新的密码
+# mysqladmin -u root -p123   password '321'
+
+
+了解：/etc/my.cnf
+• 禁止监听,只服务于本机
+[root@server0 ~]# vim /etc/my.cnf
+[mysqld]
+skip-networking    //跳过网络监听
+.. ..
+[root@server0 ~]# systemctl restart mariadb
+
+################################################
+四、数据库恢复数据
+
+1.Linux命令行，下载备份文件
+[root@server0 ~]# wget http://classroom.example.com/pub/materials/users.sql
+
+[root@server0 ~]# ls
+
+
+2.Linux命令行，导入数据到nsd库
+
+  # mysql -u root -p123 nsd < users.sql 
+
+###############################################
+五、进行表格的操作（表字段    表记录）
+
+      增 insert    删 delete   改 update   查select
+
+[root@server0 ~]# mysql -u root -p321
+
+MariaDB [(none)]> show databases;
+MariaDB [(none)]> use nsd;         #进入nsd库
+
+查寻格式：select  表字段  from 表名
+
+	> show  tables;             #查看所有表格
+	> select  *  from  base;    #查询base所有字段内容
+	> select  *  from  location;
+
+	>  desc   表名                 #查询表结构
+
+查询内容多的表格
+[root@server0 ~]# mysql -u root -p123
+MariaDB [nsd]> use mysql;
+
+MariaDB [mysql]> show  tables;    #查看所有表格
+MariaDB [mysql]> desc  user ;     #查询表结构
+
+MariaDB [mysql]> select user,host,password from user;
+
+MariaDB [mysql]> select * from nsd.base;
+
+有条件的查询  where  表字段='值'
+[root@server0 ~]# mysql -u root -p123
+
+> use nsd;
+> select * from base
+> select * from base where password='123';
+
+> select * from base where password='tarena';
+
+> select * from base where name='tom'  and 
+  password='123';
+
+> select * from base where password='456'  or 
+  password='123';
+
+
+################################################
+六、数据库的授权
+
+除了 root 用户,此nsd数据库只能被用户 lisi查询,
+此用户的密码为123
+
+用户授权设置
+– GRANT 权限列表 ON 数据库名.表名 TO 用户名@
+客户机地址  IDENTIFIED  BY  '密码';
+
+  grant  select  on  nsd.*  to  lisi@localhost
+  identified  by  '123';
+
+   当lisi在localhost进行登陆，输入密码123，
+   将会获得nsd库中所有表的查询权限
+
+MariaDB [(none)]> grant  select  on  nsd.*   to 
+   lisi@localhost   identified   by  '123';
+
+MariaDB [(none)]> select user,host,password from 
+   mysql.user;
+
+[root@server0 ~]# mysql -u lisi -p123
+MariaDB [(none)]> exit
+
+################################################
+案例5:使用数据库查询
+
+2. 在系统 server0 上使用数据库 nsd,并使用相
+应的 SQL 查询以回答下列问题:
+1)密码是 solicitous 的人的名字?
+ > use nsd;
+ > select * from base ;
+
+ > select * from base where password='solicitous';
+
+ > select name from base where password='solicitous';
+
+
+2)有多少人的 姓名是 Barbara 同时居住在 Sunnyvale?
+
+> select  *  from    base,location    
+  where   base.name='Barbara'   and 
+  location.city='Sunnyvale'   and 
+  base.id=location.id;
+ 
+> select  count(*)   from   base,location    
+   where   base.name='Barbara'   and 
+   location.city='Sunnyvale'   and 
+   base.id=location.id;
+
+> insert  base  values  ('6','Barbara','123456');
+> select  *  from   base;
+> insert  location  values  ('6','Sunnyvale');
+> select  *  from   location;
+
+
+
+
+
+1. 禁止空密码   root用户访问 mariadb 数据库
+  > use mysql;
+
+  > select user,host,password   from user;
+
+  > select user,host,password   from user where 
+    password='';
+
+  > delete from  user  where  password='';  #删除记录
+
+  > select user,host,password   from  user;
+
+  > flush  privileges;   #刷新数据所有策略
+
+命令行测试： mysql -u root -h server0.example.com
+                   登陆失败
+###############################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

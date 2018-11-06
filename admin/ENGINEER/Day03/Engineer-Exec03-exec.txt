@@ -1,0 +1,45 @@
+案例1:为虚拟机 server 配置以下静态地址参数
+– 主机名:server0.example.com
+– IP地址:172.25.0.11
+– 子网掩码:255.255.255.0
+– 默认网关:172.25.0.254
+– DNS服务器:172.25.254.254
+
+
+案例2：设置SELinux保护
+为虚拟机 server0、desktop0 配置SELinux 
+  1）确保 SELinux 处于强制启用模式（permissive） 
+  2）在每次重新开机后，此设置必须仍然有效
+
+
+
+案例3：Shell脚本
+为系统 server0 书写脚本/root/user.sh
+运行脚本，可以判断用户输入的用户是否存在
+如果存在，输出用户基本信息（id  用户名）
+如果用户，不存在则创建用户，并输出用户创建成功
+
+
+案例4：实现本机server0 的Web服务
+  1）利用httpd软件搭建Web服务，页面显示内容为 小蝌蚪找妈妈 
+
+
+案例5：实现本机server0 的防火墙配置
+  1）修改虚拟机 server0防火墙配置，明确拒绝所有客户端访问
+  2）在虚拟机 desktop0上测试能否访问server0 的Web服务
+  3）在虚拟机 desktop0上测试能否 ping通 虚拟机 server0
+
+案例6：实现本机server0 的防火墙配置
+  1）修改虚拟机 server0防火墙配置，将默认区域修改为public
+  2）在虚拟机 desktop0上测试能否访问server0 的Web服务
+  3）在虚拟机 desktop0上测试能否 ping通 虚拟机 server0
+
+
+案例7：实现本机server0 的防火墙配置
+  1）修改虚拟机 server0防火墙配置，将默认区域修改为public
+  2）修改虚拟机 server0防火墙配置，在public区域中添加http服务
+  3）在虚拟机 desktop0上测试能否访问server0 的Web服务
+
+案例8:在server上操作,验证端口转发策略
+– 从desktop0上访问server0的5423端口，与访问server0的80端口效果一样
+

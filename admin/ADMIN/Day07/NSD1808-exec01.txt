@@ -1,0 +1,121 @@
+﻿
+案例练习,准备:
+            rht-vmctl  reset  classroom
+            rht-vmctl  reset  server
+	        rht-vmctl  reset  desktop
+########################################################################
+
+﻿案例1:为虚拟机 server0 配置以下静态地址参数
+– 主机名:server0.example.com
+– IP地址:172.25.0.11
+– 子网掩码:255.255.255.0
+– 默认网关:172.25.0.254
+– DNS服务器:172.25.254.254
+
+
+案例2:为虚拟机 desktop0 配置以下静态地址参数
+– 主机名:desktop0.example.com
+– IP地址:172.25.0.10
+– 子网掩码:255.255.255.0
+– 默认网关:172.25.0.254
+– DNS服务器:172.25.254.254
+
+
+案例3:指定yum软件源
+为 server0 指定可用的 yum 软件源
+– YUM软件库的地址为 http://classroom.example.com/content/rhel7.0/x86_64/dvd
+– 将此配置为虚拟机 server0 的默认软件仓库
+– 确认可用的仓库列表
+– 利用yum仓库安装httpd与vsftpd
+
+
+案例4:指定yum软件源
+为 desktop0 指定可用的 yum 软件源
+– YUM软件库的地址为 http://classroom.example.com/content/rhel7.0/x86_64/dvd
+– 将此配置为虚拟机 server0 的默认软件仓库
+– 确认可用的仓库列表
+– 利用yum仓库安装httpd与vsftpd
+
+
+
+案例5：虚拟机 server0上操作，复制、粘贴、移动
+ 以root用户新建/nsddir/目录，在此目录下新建readme.txt文件，并进一步完成下列操作
+
+ 1）将“I love Linux”写入到文件readme.txt 
+ 2）将readme.txt重命名为mylove.txt
+ 3）将/etc/passwd、/boot、/etc/group同时拷贝到/nsddir目录下
+ 4）将ifconfig命令的前两行内容，追加写入mylove.txt
+ 5）将主机名永久配置文件，拷贝到/nsddir目录下
+ 6）将DNS永久配置文件，拷贝到/nsddir目录下
+
+案例6：虚拟机Server上操作
+  1. 新建目录结构/nsd/test
+  2. 在目录/nsd/test创建文件nsd.txt并写入内容 NSD  Student
+  3. 将/nsd/test/nsd.txt文件复制到/root目录下，同时 改名为 tedu.txt
+  4. 利用vim 修改文件/etc/hostname将其原有内容全部删除，写入新的内容为student0.example.com
+  5. 将/etc/passwd 、/etc/resolv.conf、/etc/hostname 同时拷贝到/nsd/test/目录下
+  6. 将文件 /nsd/test/hostname 重改名为 hn.txt 
+  7. 创建目录结构/nsd/test/kernel
+  7. 将目录 /boot内容中以 vm 开头的 复制到/nsd/test/kernel目录下 
+
+
+案例7:虚拟机 server0上操作，查找并处理文件
+ – 利用find查找所有用户 student 拥有的必须是文件,把它们拷贝到 /root/findfiles/ 文件夹中
+ – 利用find查找/boot目录下大于10M并且必须是文件，拷贝到/opt
+ – 利用find查找/boot/ 目录下以 vm 开头且必须是文件，拷贝到/opt
+ – 利用find查找/boot/ 目录下为快捷方式
+ – 利用find查找/etc 目录下，以 tab 作为结尾的 必须是文件
+
+
+
+案例8:虚拟机 server0上操作,查找并提取文件内容
+1.在文件 /usr/share/dict/words 中查找到所有包含字符串 seismic 的行,将输出信息,写入到/opt/nsd18.txt
+2.查看内核版本，将显示结果重定向到/root/version.txt
+3.查看红帽系统版本，将显示结果追加到/root/version.txt
+4.查看主机名将显示结果追加到/root/version.txt
+4.将/etc/fstab文件中以UUID开头的信息，写入到/root/fstab.txt
+5.提取/etc/passwd以bash结尾的行，将其信息写入/opt/pass.txt
+6.复制/etc/login.defs文件到当前目录下，改名为init.txt
+7.提取init.txt文件里的有效配置（去除以#号开头，去除空行），保存为init2.txt
+
+
+
+案例9:虚拟机 server0上操作,tar制作/释放归档压缩包（zcf、ztf、zxf、jcf、jtf、jxf、cf、tf）
+    1）备份/boot、/home这两个文件夹，保存为boothome.tar.gz文件
+    2）查看boothome.tar.gz文件内包含哪些内容 
+    3）将boothome.tar.gz释放到文件夹/root/boothome/下
+    4）创建一个名为 /root/backup.tar.bz2 的归档文件，其中包含 /usr/local 目录中的内容
+
+
+案例10:虚拟机 server0上操作
+	• 新建用户 alex，其用户ID为3456，密码是flectrag 
+	• 创建下列用户、组以及组的成员关系： 
+	 – 一个名为 adminuser 的组 
+	 – 一个名为 natasha 的用户，其属于 adminuser 组， 这个组是该用户的从属组 
+	 – 一个名为 harry 的用户，其属于 adminuser 组，这个 组是该用户的从属组 
+	 – 一个名为 sarah 的用户，其在系统中没有可交互的 Shell（/sbin/nologin），并且不是 adminuser 组的成员 
+	 – natasha 、harry、sarah 的密码都要设置为 flectra
+
+案例11：组账号基本管理
+    1）新建组账号stugrp
+    2）创建用户lily、zhangsan
+    3）为stugrp组添加三个成员用户（lily、root、zhangsan）
+    4）从stugrp组删除一个成员（lily）
+
+案例12：配置NTP网络时间客户端
+	配置虚拟机 server0，自动校对系统时间
+	NTP服务器位于 classroom.example.com 
+	此客户机的时间与NTP服务器的时间保持同步
+ 
+
+案例13:虚拟机 server0上操作
+    为用户 natasha 配置一个定时任务 
+	– 每天在本地时间 14:23 执行 
+	– 需要完成的任务操作为 /bin/echo  hiya
+
+
+
+
+
+
+

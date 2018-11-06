@@ -1,0 +1,39 @@
+1.vim编辑器命令模式,删除光标之后如何操作？
+      C（大写）   d$
+
+2.开机挂载配置文件 与 指定DNS服务器配置文件 请写出路径？
+     /etc/fstab    /etc/resolv.conf
+
+3.Samba文件系统是什么？
+     cifs
+
+4.配置nfs共享，配置文件在哪里？
+    /etc/exports
+
+5.yum客户端配置文件放在什么路径下？具体都有哪些字段？
+      /etc/yum.repos.d/*.repo
+      []、name、baseurl、enabled、gpgcheck
+
+6.配置Apache的httpd服务时，虚拟Web主机区分方式都有哪些？
+         基于域名、基于端口、基于IP地址
+
+7.配置Apache的httpd服务,指定网页文件根目录 配置字段是什么？
+             DocumentRoot
+
+8.httpd服务进行虚拟Web主机配置，具体格式是什么？
+           <VirtualHost  *:80>
+              ServerName
+              DocumentRoot    
+            </VirtualHost>
+
+9.请写出您熟知的Linux命令，至少10条以上（请开始您的表演）
+   ls  pwd   cd  cp  mv  mkdir touch  head 
+   tail less   grep  find  hostname  vim
+
+
+
+
+
+
+
+

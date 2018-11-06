@@ -1,0 +1,56 @@
+
+案例1：虚拟机 server0上操作，复制、粘贴、移动
+ 以root用户新建/nsddir/目录，在此目录下新建readme.txt文件，并进一步完成下列操作
+
+ 1）将“I love Linux”写入到文件readme.txt 
+ 2）将readme.txt重命名为mylove.txt
+ 3）将/etc/passwd、/boot、/etc/group同时拷贝到/nsddir目录下
+ 4）将ifconfig命令的前两行内容，追加写入mylove.txt
+ 5）将主机名永久配置文件/etc/hostname，拷贝到/nsddir目录下
+ 6）将DNS永久配置文件/etc/resolv.conf，拷贝到/nsddir目录下
+
+案例2：虚拟机Server上操作：复制、删除、移动及vim文本编辑器
+  1. 新建目录结构/nsd/test
+  2. 在目录/nsd/test创建文件nsd.txt并写入内容 NSD  Student
+  3. 将/nsd/test/nsd.txt文件复制到/root目录下，同时 改名为 tedu.txt
+  4. 利用vim 修改文件/etc/hostname将其原有内容全部删除，写入新的内容为server0.example.com
+  5. 将/etc/passwd 、/etc/resolv.conf、/etc/hostname 同时拷贝到/nsd/test/目录下
+  6. 将文件 /nsd/test/hostname 重改名为 hn.txt 
+  7. 创建目录结构/nsd/test/kernel
+  7. 将目录 /boot内容中以 vm 开头的 复制到/nsd/test/kernel目录下 
+
+
+案例3：虚拟机Server上操作：复制、删除、移动及vim文本编辑器
+  1. 在目录/mnt下创建一个子目录public 
+  2. 在目录/mnt/public 创建文件linux.txt,利用vim写入内容 Study Linux
+  3. 将/mnt/public/linux.txt文件复制到/root目录下，同时 改名为 study.txt
+  4. 利用vim 修改文件/etc/hostname将其原有内容全部删除，写入新的内容为www.qq.com
+  5. 将/etc/passwd 、/etc/resolv.conf、/etc/hostname 同时拷贝到/mnt/public/目录下
+  6. 将文件 /mnt/public/hostname 重改名为 stu.txt 
+  7. 创建目录结构/mnt/public/test/vm
+  7. 将目录 /boot内容中以 vm 开头的 复制到/mnt/public/test/vm目录下 
+  8. 将/home目录复制到/mnt/public/test/目录下 
+
+
+案例4：虚拟机Server上操作：ls与cat、head
+  1. 显示根目录下所有内容
+  2. 显示/etc目录下所有已tab结尾的文件
+  3. 显示/etc/resolv.conf文件的详细属性并加上易读的单位
+  4. 显示/etc/sysconfig/network-scripts/ifcfg-eth0文件的详细属性并加上易读的单位
+  5. 显示/etc/sysconfig/network-scripts/ifcfg-eth0文件的头4行内容
+
+
+案例5:虚拟机 server0上操作,查找并提取文件内容
+1.在文件 /usr/share/dict/words 中查找到所有包含字符串 seismic 的行
+2.将/etc/login.defs文件包含“#”内容
+3.提取/etc/passwd包含root的行
+4.提取/etc/passwd包含sbin的行
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,89 @@
+案例练习,准备:
+            rht-vmctl  reset  classroom
+            rht-vmctl  reset  server
+	        rht-vmctl  reset  desktop
+######################################################
+
+案例1:为虚拟机 server 配置以下静态地址参数
+– 主机名:server0.example.com
+– IP地址:172.25.0.11
+– 子网掩码:255.255.255.0
+– 默认网关:172.25.0.254
+– DNS服务器:172.25.254.254
+
+案例2：实现本机server0 的Web服务
+  1）利用httpd软件搭建Web服务，页面显示内容为 卖女孩的小火柴
+
+案例3：实现本机server0 的防火墙配置
+  1）修改虚拟机 server0防火墙配置，明确拒绝所有客户端访问
+  2）在虚拟机 desktop0上测试能否访问server0 的Web服务
+  3）在虚拟机 desktop0上测试能否 ping通 虚拟机 server0
+
+案例4：实现本机server0 的防火墙配置
+  1）修改虚拟机 server0防火墙配置，将默认区域修改为public
+  2）在虚拟机 desktop0上测试能否访问server0 的Web服务
+  3）在虚拟机 desktop0上测试能否 ping通 虚拟机 server0
+
+
+案例5：实现本机server0 的防火墙配置
+  1）修改虚拟机 server0防火墙配置，将默认区域修改为public
+  2）修改虚拟机 server0防火墙配置，在public区域中添加http
+  3）在虚拟机 desktop0上测试能否访问server0 的Web服务
+
+
+案例6：实现本机server0 的防火墙配置
+  1）修改虚拟机 server0防火墙配置，将默认区域修改为trusted
+ 2）trusted区域设置端口转发策略：从desktop0上访问server0的5423端口，与访问server0的80端口效果一样
+
+
+案例7:配置Samba文件夹共享，防火墙默认区域设置为trusted，修改SElinux状态为Enforcing
+在 server0 上发布共享文件夹
+ 1）此服务器必须是 STAFF 工作组的一个成员 
+ 2）发布目录 /devops，共享名为 devops 
+ 5）用户 harry 对共享 devops可读可写，密码是 123
+
+在 desktop0 上访问共享文件夹
+
+ 1）访问 server0 上发布共享文件夹,实现开机自动挂载到/mnt/smb
+ 2）实现对/mnt/smb目录可以读和写
+
+
+
+案例8:在server上操作,（MBR分区模式）规划分区
+ 添加一块80G的硬盘并规划分区：
+    划分2个10G的主分区；1个12G的主分区;1个20G的逻辑分区。
+
+
+
+案例9: vim文本编辑器练习，命令模式下的基本操作（重点知识）
+
+ 1）将/etc/passwd的前20行，写入到文件/opt/pass20.txt 
+ 2）将/etc/shadow的前10行,追加写入到文件/opt/pass20.txt 
+
+ 3）利用/opt/pass20.txt，进项如下操作：
+    – 命令模式下移动光标：键盘上下左右键、Home键、End键
+    – 命令模式下行间跳转：到全文的第一行（1G或gg）、到全文的最后一行（G）、到全文的第10行（10G）
+    
+    – 命令模式下复制、粘贴：
+    	 复制1行（yy）、复制3行（3yy）
+    	 粘贴到当前行之后（小写p）
+
+    – 命令模式下删除：
+    	 删除单个字符（x）
+    	 删除到行首（d^）、删除到行尾（d$）
+    	 删除1行（dd）、删除3行（3dd）
+         
+    
+    – 命令模式下查找关键词： 
+    	 搜索（/word）切换结果（n、N）
+
+    – 补充：在命令模式下大写的C，可以删除光标之后，并且进入输入模式
+
+
+
+
+
+
+
+
+

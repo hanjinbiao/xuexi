@@ -1,0 +1,384 @@
+使用教学虚拟机
+
+• 每个学员机上有三台预先配置好的虚拟机
+ – server —— 作为练习用服务器
+ – desktop —— 作为练习用客户机
+ – classroom —— 提供网关/DNS/软件素材/DHCP服务等资源
+
+  优先开机classroom，再去开启server、desktop  
+
+一、真机还原命令：优先还原classroom
+
+[root@room9pc01 ~]# rht-vmctl reset classroom
+[root@room9pc01 ~]# rht-vmctl reset server[root@room9pc01 ~]# rht-vmctl reset desktop
+
+二、进入 虚拟机server 与  虚拟机desktop,检测Yum是否可用
+
+# yum  clean  all    #清空缓存
+# yum  repolist      #列出仓库信息
+
+
+
+###############################################
+
+HTTP服务基础
+
+• 基于 B/S (Browser/Server)架构的网页服务
+– 服务端提供网页
+– 浏览器下载并显示网页
+
+• Hyper Text Markup Language(HTML),超文本标记语言
+• Hyper Text Transfer Protocol（HTTP）,超文本传输协议
+
+    HTTP默认端口 ： 80
+
+#################################################
+环境的初步设置：修改防火墙默认区域为允许所有
+虚拟机Server
+ # firewall-cmd --set-default-zone=trusted
+
+虚拟机Desktop
+ # firewall-cmd --set-default-zone=trusted 
+
+#################################################
+搭建基于域名的虚拟Web主机
+
+实现两个网站 
+  server0.example.com 与 webapp0.example.com
+
+  server0.example.com---》页面内容  My Web01
+  webapp0.example.com---》页面内容  My Web02
+
+  页面均由虚拟机Server提供
+
+[root@server0 ~]# 安装httpd
+
+# mkdir /var/www/nsd01   /var/www/nsd02
+# echo '<h1>My Web1' > /var/www/nsd01/index.html
+# echo '<h1>My Web2' > /var/www/nsd02/index.html
+
+[root@server0 ~]# vim /etc/httpd/conf.d/nsd.conf
+<VirtualHost  *:80>
+   Servername server0.example.com
+   DocumentRoot /var/www/nsd01
+</VirtualHost>
+<VirtualHost  *:80>
+   Servername webapp0.example.com
+   DocumentRoot /var/www/nsd02
+</VirtualHost>
+
+[root@server0 ~]# systemctl restart httpd
+
+################################################
+安全的Web服务器
+
+• Public Key Infrastructure,公钥基础设施
+– 公钥:主要用来加密数据
+– 私钥:主要用来解密数据(与相应的公钥匹配)
+– 数字证书:证明拥有者的合法性/权威性(单位名称、
+有效期、公钥、颁发机构及签名、......)
+– Certificate Authority,数字证书授权中心:负责证书
+的申请/审核/颁发/鉴定/撤销等管理工作
+
+
+虚拟机Server：搭建安全的Web服务
+
+1.部署网站证书（营业执照）  
+# cd /etc/pki/tls/certs
+# wget http://classroom.example.com/pub/tls/certs/server0.crt
+# ls
+
+2.部署根证书（公安局信息）
+# cd /etc/pki/tls/certs
+# wget http://classroom.example.com/pub/example-ca.crt
+# ls
+
+3.部署私钥（用于解密）
+# cd /etc/pki/tls/private/
+# wget http://classroom.example.com/pub/tls/private/server0.key
+
+# ls
+
+4.安装支持安全https的软件
+[root@server0 /]# yum -y install mod_ssl
+
+5.修改配置文件
+[root@server0 /]# vim /etc/httpd/conf.d/ssl.conf
+  #补充，在vim末行模式 ，开启行号  ：set  nu
+
+ 59  DocumentRoot "/var/www/html"
+ 60  ServerName www0.example.com:443
+
+#指定网站证书
+100 SSLCertificateFile /etc/pki/tls/certs/server0.crt
+#指定解密的密钥
+107 SSLCertificateKeyFile /etc/pki/tls/private/server0.key
+#指定根证书
+122 SSLCACertificateFile /etc/pki/tls/certs/example-ca.crt
+
+6.书写一个网站用于测试 DocumentRoot "/var/www/html"
+
+# echo '<h1>Hello world' > /var/www/html/index.html
+
+7.重起httpd服务
+[root@server0 /]# systemctl restart httpd
+
+验证：
+  # firefox  https://www0.example.com
+
+     鼠标点击选择 我已了解可能的风险----->确认安全例外
+
+###############################################
+邮件服务
+
+• 电子邮件服务器的基本功能
+– 为用户提供电子邮箱存储空间(用户名@邮件域名)
+– 处理用户发出的邮件 —— 传递给收件服务器
+– 处理用户收到的邮件 —— 投递到邮箱
+
+   SMTP：用户发邮件协议   25
+   pop3：用户收邮件协议   110
+
+
+DNS服务器：classroom.example.com
+
+    yg@server0.example.com
+    xln@server0.example.com
+
+虚拟机Server0：
+1.安装 postfix软件
+[root@server0 /]# rpm -q postfix
+postfix-2.10.1-6.el7.x86_64
+
+2.修改主配置文件/etc/postfix/main.cf
+[root@server0 /]# vim /etc/postfix/main.cf
+  #在末行模式下  :set  nu  开启行号
+
+ 99 myorigin = server0.example.com  #默认补全域名后缀
+ 116 inet_interfaces = all    #允许所有使用邮件功能
+ 164 mydestination = server0.example.com
+                                                          #利用值来判断为本域邮件
+
+3.重起服务
+[root@server0 /]# systemctl restart postfix
+################################################
+使用mail命令发信/收信
+• mail 发信操作
+– mail  -s   '邮件标题'   -r 发件人   收件人[@收件域]...
+
+• mail 收信操作
+– mail  [-u 用户名]
+
+[root@server0 /]# useradd yg
+[root@server0 /]# useradd xln
+
+# echo  haha  |  mail -s   'test'   -r  yg  xln
+# mail -u  xln
+>N  1 yg@server0.example.com  
+&  1    #输入邮件的编号，查看邮件内容
+
+################################################
+parted大容量分区，专用于gpt分区方案
+
+    128个主分区，最大容量到18EB
+
+
+[root@server0 ~]# parted   /dev/vdb
+(parted) mktable gpt      #指定分区模式为GPT
+(parted) print            #输出分区表
+(parted) mkpart           #划分  分区
+分区名称？  []? xixi          #分区名称  随意起
+文件系统类型？  [ext2]? ext4   #分区文件系统 无实际作用 
+起始点？ 0                                  # 起始点
+结束点？ 4G                 # 结束点
+忽略/Ignore/放弃/Cancel? Ignore    #输入i选择忽略
+(parted) unit GB          # 使用GB作为显示单位
+(parted) print 
+(parted) mkpart 
+分区名称？  []? xixi 
+文件系统类型？  [ext2]? ext4
+ 起始点？ 4G          
+ 结束点？ 6G
+(parted) print
+###############################################                                                     
+
+[root@server0 ~]# ls /dev/vdb1 /dev/vdb2
+
+什么是交换空间
+• 相当于虚拟内存,
+– 当物理内存不够用时,使用磁盘空间来模拟内存
+– 在一定程度上缓解内存不足的问题
+– 交换分区:以空闲分区充当的交换空间
+
+[root@server0 ~]# mkswap /dev/vdb1 #格式化交换文件系统
+[root@server0 ~]# mkswap /dev/vdb2 #格式化交换文件系统
+
+[root@server0 ~]# swapon /dev/vdb2 #启用的命令
+[root@server0 ~]# swapon  -s       #查看交换空间的成员
+[root@server0 ~]# swapoff /dev/vdb1 #停用交换分区
+[root@server0 ~]# swapon  -s
+[root@server0 ~]# swapoff /dev/vdb2
+[root@server0 ~]# swapon  -s
+
+#################################################
+交换分区的开机自动启用
+
+[root@server0 ~]# vim /etc/fstab 
+/dev/vdb1   swap   swap  defaults 0 0
+/dev/vdb2   swap   swap  defaults 0 0
+
+[root@server0 ~]# swapon -a   #检测书写是否正确
+[root@server0 ~]# swapon -s
+
+##############################################
+读写Samba共享
+
+服务端：
+  1.安装软件samba
+  2.创建共享帐号
+  3.修改配置文件/etc/samba/smb.conf
+       [ 共享名]
+    path   =  实际共享目录路径
+    write  list  =  可写共享帐号名
+   4.创建 实际共享目录路径
+   5.重起smb服务
+   6.设置本地目录的权限
+  7.SELinux布尔值
+   8.防火墙设置
+客户端：
+    1.安装软件cifs-utils
+    2.实现挂载
+################################################
+逻辑卷的管理
+
+  将众多的分区，组成卷组，从卷组中划分逻辑卷
+
+ 逻辑卷的扩展：
+  1.卷组有剩余空间：扩展逻辑卷的空间，扩展文件系统
+  2.卷组没有有剩余空间：扩展卷组，扩展逻辑卷的空间，扩展文件系统
+
+################################################
+配置聚合链接
+
+  1.创建虚拟机网卡team0   config '{}'
+  2.为team0添加两个成员
+  3.为team0配置IP地址
+  4.激活配置
+
+#################################################
+iscsi网络磁盘
+
+服务端： 
+  1.创建分区
+  2.安装targetcli
+  3.创建后端存储
+  4.创建target磁盘组，起iqn名字
+  5.将后端存储放入target磁盘组，lun关联
+  6.设置客户端声称的名字
+  7.设置本机IP地址启用iscsi网络磁盘
+  8.重起target服务
+
+客户端：
+  1.安装软件包iscsi-initiator-utils
+  2.修改配置文件,指定客户端声称的名字
+   /etc/iscsi/initiatorname.iscsi
+  3.重起iscsid服务，刷新iqn标识
+  4.运行iscsiadm命令进行发现服务端共享存储
+  5.重起iscsi识别共享存储
+################################################
+ 动态Web
+  1.下载或书写一个python
+  2.进行网页的跳转  Alias  网络路径    实际本地路径
+  3.安装mod_wsgi软件支持翻译python代码
+  4.书写配置WsgiScriptAlias  网络路径    实际本地路径
+  5.重起httpd服务
+  6.书写配置文件   
+  Listen  8909
+  <VirtualHost  *:8909>
+  7.修改SELinux端口
+  8.重起httpd服务
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

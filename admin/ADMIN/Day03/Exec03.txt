@@ -1,0 +1,36 @@
+
+案例：复制、删除、移动
+  1. 在目录/opt下创建一个子目录 nsd 
+  2. 在目录/opt/nsd/创建文件readme.txt,利用vim写入内容 I Love Linux
+  3. 将/etc/passwd 和 /etc/resolv.conf同时拷贝到/opt/nsd目录下
+  4. 将文件 /etc/redhat-release复制到 /root/ 下，同时 改名为 version.txt 
+  5. 将文件 /root/version.txt 移动到/opt/nsd/目录下 
+  6. 将/home目录复制到/opt/nsd/目录下 
+
+
+案例：ls命令练习
+  1. 查看根目录下内容
+  2. 显示根目录本身详细属性   
+  3. 切换到/boot目录，显示当前目录内容的详细属性，并加上易读的容量单位
+  4. 显示/root的全部内容，包括隐藏文档
+  5. 显示/bin/bash程序，详细属性
+  6. 显示/dev/cdrom光驱设备，详细属性
+
+
+案例：mount挂载
+  1. 在根目录下创建目录结构/rhel7/dvd
+  2. 利用图形将光盘文件rhel-server-7.4-x86_64-dvd.iso放入光驱设备中
+  3. 将光驱设备挂载到/rhel7/dvd目录，以/rhel7/dvd目录作为其访问点
+  4. 查看/rhel7/dvd/Packages目录内容
+  5. 将/rhel7/dvd/Packages目录中以vsftpd开头的软件包，拷贝到/opt下
+
+
+案例：别名与vim的使用
+  1. 为虚拟机定义一个别名，执行byebye可以实现关闭系统
+  2. 利用vim 修改文件/etc/hostname将其原有内容全部删除，写入新的内容为student.tmooc.cn
+ 
+
+
+
+
+

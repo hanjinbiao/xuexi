@@ -1,0 +1,406 @@
+• Linux命令
+– 用来实现某一类功能的指令或程序
+  Linux执行命令，都要找到对应的程序
+
+– 命令的执行依赖于解释器(默认解释器：/bin/bash)
+
+   用户------->解释器------->内核------->硬件
+
+  绿色：可以运行的程序
+
+
+• Linux命令的分类
+– 内部命令:属于解释器的一部分
+– 外部命令:解释器之外的其他程序
+
+
+命令行的一般格式
+• 基本用法
+– 命令字     [选项]..        [参数1]     [参数2]...
+
+[root@server0 ~]# ls -l /root/
+
+快速编辑技巧
+• Tab键自动补全
+– 可补齐命令字、选项、参数、文件路径、软件名、服务名
+
+# ls /etc/sysconfig/network-scripts/ifcfg-eth0 
+
+# ls /et(tab)/sysco(tab)/netw(tab)-(tab)/ifcfg-eth0 
+
+# if 连续按两次tab
+# ifco(tab)
+# hostname
+# cat   /etc/redhat-release
+
+• 快捷键
+– Ctrl + c:结束正在运行的命令
+– Esc + . 或  ALT +  . :粘贴上一个命令的参数
+[root@localhost ~]# ls  /etc/redhat-release
+
+[root@localhost ~]# cat    ALT  +  .
+[root@localhost ~]# cat -n   ALT  +  .
+[root@localhost ~]# ls  -l     ALT  +  .
+
+– Ctrl + l:清空整个屏幕
+
+
+– Ctrl + u:清空至行首
+– Ctrl + w:往回删除一个单词(以空格界定)
+#################################################
+mount挂载操作
+
+从光盘文件中获得众多的软件包
+
+ Windows：
+   光盘文件-------->光驱设备-------->CD驱动器（图标）访问点
+
+ Linux：
+   光盘文件-------->光驱设备-------->目录（访问点）
+
+         洞口（访问点）-------> 煤矿
+
+  在命令行访问设备，必须通过访问点进行访问
+
+1.通过图形将光盘镜像文件，放入虚拟光驱设备
+
+2.查看光驱设备
+   青色：快捷方式
+[root@localhost ~]# ls  /dev/cdrom
+
+[root@localhost ~]# ls -l  /dev/cdrom
+[root@localhost ~]# ls  /dev/sr0
+
+3.进行挂载：让目录成为设备的访问点
+• 使用mount命令
+– 格式:mount  设备路径     挂载点目录
+
+[root@localhost ~]# mkdir  /dvd    #创建目录dvd
+[root@localhost ~]# ls  /dvd
+
+[root@localhost ~]# mount  /dev/cdrom  /dvd
+ mount: /dev/sr0 写保护，将以只读方式挂载
+  让/dvd成为/dev/cdrom 的访问点
+
+[root@localhost ~]# ls  /dvd/
+[root@localhost ~]# ls  /dvd/Packages
+
+4.卸载
+[root@localhost ~]# umount /dvd/
+[root@localhost ~]# ls /dvd/
+
+##################################################
+注意事项：
+    1.卸载时，当前不要在访问点内
+  [root@localhost dvd]# umount /dvd/
+  umount: /dvd：目标忙。
+
+    2.挂载设备时，访问点最好时自己创建的目录
+
+#################################################
+
+目录和文件管理
+
+• pwd — Print Working Directory
+– 用途:查看当前工作目录
+
+• cd — Change Directory
+– 用途:切换工作目录
+– 格式:cd [目标文件夹位置]
+
+   ～：代表用户的家目录
+  ~user表示用户user的家目录
+
+   /root：管理员的家目录
+   /home：存放所有普通用户的家目录
+
+[root@localhost /]# cd  ~root     #去往root用户家目录
+[root@localhost ～]# pwd
+
+[root@localhost ～]# useradd  dc  #创建用户dc
+[root@localhost ～]# cd ~dc       #去往dc用户家目录
+[root@localhost dc]# pwd
+
+[root@localhost dc]# useradd  harry   #创建用户harry
+[root@localhost dc]# cd ~harry   #去往harry用户家目录
+[root@localhost harry]# pwd
+
+##############################################
+  . 表示当前目录，经常复制与移动
+  .. 表示父目录
+
+###############################################
+• ls — List
+– 格式:ls [选项]... [目录或文件名]
+
+• 常用命令选项
+– -l :以长格式显示，显示详细属性
+– -h:提供易读的容量单位(K、M等)
+– -d:显示目录本身(而不是内容)的属性
+– -A:包括名称以 . 开头的隐藏文档
+
+[root@localhost ~]# ls --help     #显示ls命令的帮助信息
+[root@localhost ~]# ls -l  /boot
+[root@localhost ~]# ls -lh  /boot
+
+[root@localhost ~]# ls -ld  /boot
+[root@localhost ~]# ls -ld  /root
+
+[root@localhost ~]# ls   /home
+[root@localhost ~]# ls -lh  /home
+
+[root@localhost ~]# mkdir /mnt/.nsd1808
+[root@localhost ~]# ls /mnt/
+[root@localhost ~]# ls -A /mnt/
+[root@localhost ~]# ls -A /root
+[root@localhost ~]# ls -A /boot
+
+[root@localhost ~]# man passwd   #查看权威帮助信息
+[root@localhost ~]# man ls       #查看权威帮助信息
+  /example    #全文搜索example
+  
+###############################################
+使用通配符
+
+• 针对不确定的文档名称,以特殊字符表示
+– *:任意多个任意字符
+– ?:单个字符
+
+[root@localhost /]# ls /root/a*     #列出以a开头
+[root@localhost /]# ls /boot/vm*
+
+[root@localhost /]# ls /etc/*tab    #列出以tab结尾
+[root@localhost /]# ls /etc/*.conf   
+
+[root@localhost /]# ls /dev/tty*
+
+[root@localhost /]# ls /dev/tty?
+[root@localhost /]# ls /dev/tty?？
+[root@localhost /]# ls /dev/tty?？？
+
+– [a-z]:多个字符或连续范围中的一个,若无则忽略
+– {a,min,xy}:多组不同的字符串,全匹配
+
+[root@localhost /]# ls /dev/tty[3-6]
+[root@localhost /]# ls /dev/tty[1-3]
+
+[root@localhost /]# ls /dev/tty{1,3,5,7,11,31}
+[root@localhost /]# ls /dev/tty{1,3,5,7,11,31,S0}
+[root@localhost /]# ls /dev/tty{S0,S3}
+
+   请列出/dev/下，tty20至tty30的设备文件？
+[root@localhost /]# ls  /dev/tty2[0-9]   /dev/tty30
+[root@localhost /]# ls  /dev/tty{2[0-9],30}
+
+############################################
+别名的定义：简化复杂命令
+• 查看已设置的别名
+– alias  [别名名称]
+• 定义新的别名
+– alias  别名名称= '实际执行的命令行'
+• 取消已设置的别名
+– unalias  [别名名称]
+
+
+[root@localhost /]# alias  hn='hostname'  #定义别名
+[root@localhost /]# alias   #查看当前系统生效的别名
+[root@localhost /]# hn      #执行成功
+
+[root@localhost /]# unalias  hn   #删除别名
+[root@localhost /]# hn            #执行失败
+
+[root@localhost /]# alias myls='ls -lh'  #定义别名
+[root@localhost /]# alias      #查看当前系统生效的别名
+[root@localhost /]# myls  /root        #执行成功
+
+[root@localhost /]# unalias  myls    #删除别名
+[root@localhost /]# myls   /root     #执行失败
+
+###############################################
+  请定义一个自定义的命令qstat
+  执行该命令可以运行：/bin/ps -Ao pid,tt,user,fname,rsz
+                  
+ # alias qstat='/bin/ps -Ao pid,tt,user,fname,rsz'
+ # qstat
+
+################################################
+mkdir 创建目录
+• mkdir — Make Directory      
+– 格式:mkdir [-p] [/路径/]目录名  //-p表示连父目录一起创建
+[root@localhost /]# mkdir -p /vod/movie/cartoon
+  
+[root@localhost /]# ls /
+[root@localhost /]# ls /vod
+[root@localhost /]# ls /vod/movie
+
+[root@localhost /]# mkdir -p /mnt/aa/bb/cc/dd
+[root@localhost /]# ls /mnt/
+[root@localhost /]# ls /mnt/aa
+[root@localhost /]# ls /mnt/aa/bb
+[root@localhost /]# ls /mnt/aa/bb/cc
+
+#################################################
+[root@localhost /]# mkdir /root/test01 /mnt/test02
+[root@localhost /]# ls /root/
+
+[root@localhost /]# ls /mnt/
+
+[root@server0 ~]# ls -R /mnt/aa    #-R表示递归显示
+
+   递归:目录本身，以及目录下所有都算上
+
+#################################################
+• vim文本编辑器
+ – 格式: vim   [[/目录/]文件名]
+
+ – 若目标文件不存在,则新建空文件并编辑
+ – 若目标文件已存在,则打开此文件并编辑
+
+ 三个模式：命令模式    插入模式（编辑模式）   末行模式
+
+[root@localhost /]# vim  /mnt/haxi.txt
+
+	         i 键
+	       命 ----------------->插入模式(按Esc 键回到命令模式)
+	       令
+	       模
+	       式 ----------------->末行模式(按Esc 键回到命令模式)
+                       : 键
+
+       末行模式  ：wq   保存并退出
+       末行模式  ：q！  强制不保存并退出
+
+
+##############################################
+rm 删除
+• rm — Remove
+  – 格式:rm [选项]... 文件或目录...
+
+• 常用命令选项
+ – -r、-f:递归删除(含目录)、强制删除
+
+[root@localhost /]# mkdir  /opt/abc  /mnt/test05
+[root@localhost /]# ls /opt/
+[root@localhost /]# ls /mnt/
+
+[root@localhost /]# rm -rf  /opt/abc/  /mnt/test05/
+[root@localhost /]# ls /opt/
+[root@localhost /]# ls /mnt/
+
+###############################################
+mv 移动/重命名
+• mv — Move
+– 格式:mv    原文件...   目标路径
+
+[root@localhost /]# rm -rf /mnt/*
+[root@localhost /]# mkdir /mnt
+
+[root@localhost /]# mkdir  /mnt/nsd01
+[root@localhost /]# touch  /mnt/a.txt
+[root@localhost /]# ls  /mnt/
+
+[root@localhost /]# mv  /mnt/a.txt  /mnt/nsd01/
+[root@localhost /]# ls  /mnt
+[root@localhost /]# ls  /mnt/nsd01
+
+重命名：路径不变的移动
+[root@localhost /]# mv /mnt/nsd01/  /mnt/student
+[root@localhost /]# ls /mnt/
+
+[root@localhost /]# mv /mnt/student/  /mnt/file
+[root@localhost /]# ls /mnt/
+
+[root@localhost /]# mv /mnt/file  /mnt/abcd
+[root@localhost /]# ls /mnt/
+
+################################################
+cp 复制
+• cp — Copy
+– 格式:cp [选项]... 原文件...    目标路径
+
+• 常用命令选项
+– -r:递归,复制目录时必须有此选项
+
+[root@localhost /]# rm -rf  /mnt/*
+[root@localhost /]# ls  /mnt/
+[root@localhost /]# cp  /etc/passwd  /mnt/
+[root@localhost /]# ls  /mnt/
+
+[root@localhost /]# cp  /etc/redhat-release   /mnt/
+[root@localhost /]# ls  /mnt/
+
+[root@localhost /]# cp -r  /boot/   /mnt/
+[root@localhost /]# ls  /mnt/
+[root@localhost /]# ls  /mnt/boot/
+
+处理复制时出现重名，强制覆盖
+在本次操作临时取消别名的操作
+
+[root@localhost /]# \cp -r /boot/ /mnt/
+[root@localhost /]# \cp -r /boot/ /mnt/
+
+[root@localhost /]# cp -r /boot/ /mnt/
+
+可以支持两个以上的参数，永远把最后一个参数作为目标，其他的所有参数都作为源
+
+# cp -r  /home/ /etc/fstab  /tmp/   /opt/   /mnt/
+# ls  /mnt
+
+复制与 点 的结合应用: 将源文档复制到，当前路径下
+  .表示 当前路径
+
+# cd  /etc/sysconfig/network-scripts
+# cp  /etc/fstab       .
+
+ 复制时候，可以重新命名，目标路径文档的名字
+[root@localhost /]# rm -rf /mnt/*
+[root@localhost /]# cp /etc/redhat-release /mnt/
+[root@localhost /]# ls /mnt/
+
+[root@localhost /]# cp /etc/redhat-release /mnt/a
+[root@localhost /]# ls /mnt/
+
+[root@localhost /]# rm -rf /mnt/*
+[root@localhost /]# cp -r /home/   /mnt/test
+[root@localhost /]# ls  /mnt
+[root@localhost /]# cp -r /home/   /mnt/test
+[root@localhost /]# ls  /mnt/test
+  请描述 两次复制的不同？
+   1.将/home目录复制到/mnt下重命名为test  
+   2.将/home目录复制到/mnt/test/目录下
+   
+###############################################
+
+查看时间date
+
+[root@localhost /]# date
+2018年 09月 03日 星期一 17:21:41 CST
+[root@localhost /]# date -s "年-月-日    时：分：秒"
+[root@localhost /]# date -s "2000-9-3 10:20"
+[root@localhost /]# date
+
+[root@localhost /]# date -s "2018-9-3 17:23"
+
+交互式计算器： bc
+  运算法则：  加 +      减 -    乘 *     除 /     取余数 %
+##############################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

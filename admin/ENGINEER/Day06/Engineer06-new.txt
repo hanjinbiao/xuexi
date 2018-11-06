@@ -1,0 +1,430 @@
+使用教学虚拟机
+
+• 每个学员机上有三台预先配置好的虚拟机
+ – server —— 作为练习用服务器
+ – desktop —— 作为练习用客户机
+ – classroom —— 提供网关/DNS/软件素材/DHCP服务等资源
+
+  优先开机classroom，再去开启server、desktop  
+
+一、真机还原命令：优先还原classroom
+
+[root@room9pc01 ~]# rht-vmctl reset classroom
+[root@room9pc01 ~]# rht-vmctl reset server[root@room9pc01 ~]# rht-vmctl reset desktop
+
+二、进入 虚拟机server 与  虚拟机desktop,检测Yum是否可用
+
+# yum  clean  all    #清空缓存
+# yum  repolist      #列出仓库信息
+
+###############################################
+
+HTTP服务基础
+
+• 基于 B/S (Browser/Server)架构的网页服务
+– 服务端提供网页
+– 浏览器下载并显示网页
+
+• Hyper Text Markup Language(HTML),超文本标记语言
+• Hyper Text Transfer Protocol（HTTP）,超文本传输协议
+
+    HTTP默认端口 ： 80
+
+#################################################
+环境的初步设置：修改防火墙默认区域为允许所有
+虚拟机Server
+ # firewall-cmd --set-default-zone=trusted
+
+虚拟机Desktop
+ # firewall-cmd --set-default-zone=trusted 
+
+#################################################
+构建独立的Web服务器
+虚拟机Server
+1.安装软件
+[root@server0 ~]# yum -y install httpd
+2.书写页面文件
+# echo '<h1>Hello World' > /var/www/html/index.html 
+# cat /var/www/html/index.html
+3.重起httpd服务
+# systemctl restart httpd
+# systemctl enable httpd
+
+################################################
+
+• 提供的默认配置
+– Listen:监听地址:端口(80)
+– ServerName:本站点注册的DNS名称(空缺)
+– DocumentRoot:网页根目录(/var/www/html)
+– DirectoryIndex:起始页/首页文件名(index.html)
+
+
+#################################################
+
+– ServerName:本站点注册的DNS名称(空缺)
+
+   DNS服务器：域名解析 classroom.example.com
+
+       今日可用域名： server0.example.com
+                www0.example.com
+                webapp0.example.com
+
+[root@desktop0 ~]# nslookup server0.example.com
+[root@desktop0 ~]# nslookup www0.example.com
+[root@desktop0 ~]# nslookup webapp0.example.com
+
+###############################################
+– ServerName:本站点注册的DNS名称(空缺)
+
+虚拟机Server0：
+1.修改主配置文件/etc/httpd/conf/httpd.conf 
+
+ 95行  ServerName  server0.example.com:80
+
+2.重起httpd服务
+[root@server0 ~]# systemctl restart httpd
+
+虚拟机Desktop0：测试访问
+[root@desktop0 ~]# firefox server0.example.com
+
+#################################################
+
+– DocumentRoot:网页文件的根目录(/var/www/html)
+
+虚拟机Server0：
+1.修改主配置文件/etc/httpd/conf/httpd.conf 
+
+  122行  DocumentRoot   "/var/www/myweb"
+
+2.常见网页文件路径，书写新的页面
+# mkdir  /var/www/myweb
+# echo  '<h1>NSD1808 Web' > /var/www/myweb/index.html
+
+3.重起httpd服务
+[root@server0 ~]# systemctl restart httpd
+
+虚拟机Desktop0：测试访问
+[root@desktop0 ~]# firefox server0.example.com
+
+##################################################
+网络路径与服务器实际路径
+
+  网络路径：在浏览器输入的路径
+
+   firefox server0.example.com---》DNS
+
+   firefox 172.25.0.11---->服务端 80---->httpd          
+        -->主配置文件----->DocumentRoot  /var/www/myweb
+
+
+   浏览器： server0.example.com
+   服务端：/var/www/myweb
+
+   浏览器： server0.example.com/abc
+   服务端：/var/www/myweb/abc
+
+##############################################
+
+虚拟机Server0：
+# mkdir /var/www/myweb/abc/
+
+# echo '<h1>wo shi abc' > /var/www/myweb/abc/index.html
+
+虚拟机Desktop0：
+#  firefox  server0.example.com/abc
+
+
+###############################################
+虚拟Web主机
+ 
+  作用：一台服务器，提供多个不同的Web页面
+
+• 区分方式
+  – 基于域名的虚拟主机
+  – 基于端口的虚拟主机
+  – 基于IP地址的虚拟主机
+
+• 配置文件路径
+– /etc/httpd/conf/httpd.conf (主配置文件)
+– /etc/httpd/conf.d/*.conf(调用配置文件)
+
+ <VirtualHost IP地址:端口>
+   ServerName  此站点的DNS名称
+   DocumentRoot 此站点的网页根目录
+ </VirtualHost>
+
+
+##############################################
+ 案例：构建基于域名的虚拟主机
+虚拟机Server0:
+[root@server0 ~]# vim /etc/httpd/conf.d/nsd.conf
+ <VirtualHost  *:80>           #本机所有IP启用虚拟Web
+   ServerName  www0.example.com  #网站的域名
+   DocumentRoot /var/www/nsd01   #网页文件路径
+ </VirtualHost>
+
+ <VirtualHost  *:80>
+   ServerName    webapp0.example.com
+   DocumentRoot  /var/www/nsd02
+ </VirtualHost>
+
+# mkdir  /var/www/nsd01     /var/www/nsd02
+# echo  '<h1>百度'    >   /var/www/nsd01/index.html
+# echo  '<h1>企鹅'   >   /var/www/nsd02/index.html
+# systemctl  restart  httpd
+
+
+ 一旦使用虚拟Web主机功能，所有网站都必须用虚拟Web主机完成
+
+[root@server0 ~]# vim /etc/httpd/conf.d/nsd.conf
+<VirtualHost  *:80>
+  ServerName www0.example.com
+  DocumentRoot /var/www/nsd01
+</VirtualHost>
+<VirtualHost  *:80>
+  ServerName webapp0.example.com
+  DocumentRoot /var/www/nsd02
+</VirtualHost>
+<VirtualHost  *:80>
+  ServerName server0.example.com
+  DocumentRoot /var/www/myweb
+</VirtualHost>
+
+################################################
+Web访问控制（DocumentRoot）
+
+针对 DocumentRoot 网页目录的权限控制
+– httpd 运行身份(用户/组):apache
+
+
+服务配置
+• 使用 <Directory> 配置区段
+– 每个文件夹自动继承其父目录的访问权限
+– 除非针对子目录有明确设置
+
+              /opt 拒绝所有人访问
+
+              /opt/test   拒绝所有人访问
+
+              /opt/class  单独书写配置允许
+
+
+ <Directory 目录的绝对路径>
+      .. ..
+   Require all denied|granted
+   Require ip IP或网段地址 .. ..
+ </Directory>
+案例3:配置网页内容访问
+在 Web 网站 http://server0.example.com 的
+DocumentRoot 目录下创建一个名为 private 的子目录
+1.查看DocumentRoot 路径
+# cat /etc/httpd/conf.d/nsd.conf
+
+2.创建相应目录
+[root@server0 ~]# mkdir /var/www/myweb/private
+
+3.书写一个网页文件
+# echo '<h1> wo shi private' > /var/www/myweb/private/index.html
+
+# cat /var/www/myweb/private/index.html
+
+4.从 server0 上,任何人都可以浏览 private 的内容,
+   但是从其他系统不能访问这个目录的内容
+[root@server0 ~]# vim /etc/httpd/conf.d/test.conf
+<Directory  /var/www/myweb/private>
+    Require  ip  172.25.0.11
+</Directory>
+
+5.重起httpd服务
+
+客户端与服务端均做访问测试：
+  firefox  server0.example.com/private
+
+ 验证最终结果：虚拟机desktop被拒绝，虚拟机server可以访问
+
+#################################################
+案例4:使用自定Web根目录
+调整 Web 站点 http://server0.example.com 的网页目录
+要求如下:
+
+虚拟机Server0：
+1)新建目录 /webroot,作为此站点新的网页文件目录
+ # mkdir  /webroot
+ # echo '<h1>wo shi webroot' >  /webroot/index.html
+ # cat /webroot/index.html
+
+2)修改配置文件vim /etc/httpd/conf.d/nsd.conf
+ <VirtualHost  *:80>
+   ServerName server0.example.com
+   DocumentRoot /webroot
+ </VirtualHost>
+
+3)修改配置文件，添加服务的访问控制
+[root@server0 ~]# vim  /etc/httpd/conf.d/test.conf
+  <Directory  /webroot>
+    Require all granted    #允许所有人访问
+  </Directory>
+
+4)重起httpd服务
+[root@server0 ~]# systemctl restart httpd
+
+5)SELinux的安全上下文（标签起到标识作用）
+[root@server0 ~]# ls -Zd /var/www/
+[root@server0 ~]# ls -Zd /webroot
+• 方式1:参照标准目录,重设新目录的属性
+– chcon [-R] --reference=模板目录 新目录
+
+# chcon -R --reference=/var/www   /webroot
+#   将/webroot修改为/var/www一样的标签值
+# ls -Zd /webroot/
+
+##############################################
+部署动态网站
+
+动态网站的运行
+• 服务端的原始网页 ≠ 浏览器访问到的网页
+  –  由Web服务软件接受请求,动态程序转后端模块处理
+ – PHP网页、Python网页、JSP网页
+
+为站点 webapp0.example.com 配置提供动态Web内
+容,要求如下:
+
+1.下载Python网页文件，到站点 webapp0.example.com网页根目录
+
+# cat /etc/httpd/conf.d/nsd.conf   #查看网页文件路径
+
+# cd /var/www/nsd02
+# wget http://classroom.example.com/pub/materials/webinfo.wsgi
+
+2.方便用户的访问，网页跳转   
+  
+配置字段格式：  Alias   网络路径      实际本地路径
+
+[root@server0 /]# vim /etc/httpd/conf.d/nsd.conf
+<VirtualHost  *:80>
+  ServerName  webapp0.example.com
+  DocumentRoot  /var/www/nsd02
+  Alias  /   /var/www/nsd02/webinfo.wsgi
+   #当客户端访问网页文件根目录时，跳转到webinfo.wsgi页面
+
+</VirtualHost>
+
+[root@server0 /]# systemctl restart httpd
+
+3.安装mod_wsgi软件包,专用于翻译Python代码页面
+[root@server0 /]# yum -y install mod_wsgi
+
+[root@server0 /]# vim /etc/httpd/conf.d/nsd.conf 
+<VirtualHost  *:80>
+  ServerName webapp0.example.com
+  DocumentRoot /var/www/nsd02
+  WsgiScriptAlias  /   /var/www/nsd02/webinfo.wsgi
+
+</VirtualHost>
+
+[root@server0 /]# systemctl restart httpd
+
+网页内容显示：显示当前系统的  Unix时间戳
+  Unix时间戳：自1970-1-1 0:0:0到当前系统时间经历秒数    
+
+
+4.此虚拟主机侦听在端口8909 
+[root@server0 /]# vim /etc/httpd/conf.d/nsd.conf
+Listen 8909
+<VirtualHost  *:8909>
+  ServerName webapp0.example.com
+  DocumentRoot /var/www/nsd02
+  WsgiScriptAlias  /   /var/www/nsd02/webinfo.wsgi
+</VirtualHost>
+
+5.SELinux非默认端口的开放
+# semanage port  -l  |  grep  http
+# semanage port -a  -t http_port_t   -p tcp 8909
+ -a:添加     -t：类型    -p：协议 
+[root@server0 /]# systemctl restart httpd
+客户端验证：
+[root@desktop0 ~]# firefox webapp0.example.com:8909
+
+##################################################
+虚拟Web主机匹配优先级：由上到下，匹配及停止
+
+端口的优先级大于域名
+
+################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################################
+客户端访问服务端资源：
+  1.防火墙
+  2.服务本身的权限
+  3.本地目录的权限
+ 4.SELinux安全的策略
+
+###############################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

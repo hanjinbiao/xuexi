@@ -1,0 +1,473 @@
+使用教学虚拟机
+
+• 每个学员机上有三台预先配置好的虚拟机
+ – server —— 作为练习用服务器
+ – desktop —— 作为练习用客户机
+ – classroom —— 提供网关/DNS/软件素材/DHCP服务等资源
+
+  优先开机classroom，再去开启server、desktop  
+
+一、真机还原命令：优先还原classroom
+
+[root@room9pc01 ~]# rht-vmctl reset classroom
+[root@room9pc01 ~]# rht-vmctl reset server[root@room9pc01 ~]# rht-vmctl reset desktop
+
+二、进入 虚拟机server 与  虚拟机desktop,检测Yum是否可用
+
+# yum  clean  all    #清空缓存
+# yum  repolist      #列出仓库信息
+
+###################################################
+Shell脚本基础
+
+      脚本：一个可以运行文件，可以实现某种功能
+
+案例：
+   请利用Shell语言实现，运行一个文件，可以再命令行
+   输出:hello world
+
+[root@server0 ~]# vim /root/hello.sh
+  echo hello world
+
+[root@server0 ~]# chmod +x /root/hello.sh [root@server0 ~]# ls -l /root/hello.sh
+
+[root@server0 ~]# /root/hello.sh
+
+################################################
+规范Shell脚本的一般组成
+• #! 环境声明(以下的代码有那个程序进行翻译)
+• # 注释文本
+• 可执行代码
+    
+
+案例：
+   1)输出当前红帽系统的版本信息
+   2)输出当前使用的内核版本
+   3)输出当前系统的主机名
+
+[root@server0 ~]# vim /root/hello.sh
+	#!/bin/bash
+	echo hello world
+	hostname 
+	cat /etc/redhat-release
+	uname -r
+	ifconfig | head -2 | tail -1
+
+[root@server0 ~]# /root/hello.sh
+
+############################################
+重定向输出
+
+     >：只收集前面命令的正确输出信息，写入文本文件中
+     2>：只收集前面命令的错误输出信息，写入文本文件中
+     &>：收集前面命令的正确与错误输出信息，写入文本文件中
+      
+	# echo 123 > /opt/1.txt
+	# cat /opt/1.txt /2.txt  #有正确信息与错误信息的输出
+
+	# cat /opt/1.txt /2.txt > /mnt/a.txt
+	# cat /mnt/a.txt
+
+	# cat /opt/1.txt /2.txt 2> /mnt/a.txt 
+	# cat /mnt/a.txt
+
+    # cat /opt/1.txt /2.txt &> /mnt/a.txt 
+    # cat /mnt/a.txt
+#################################################
+案例:
+   书写创建用户zhangsan，并设置密码为123脚本
+
+[root@server0 ~]# vim /root/user.sh 
+	#!/bin/bash
+	abc=nsd12
+	useradd  $abc &> /dev/null
+	echo  $abc创建成功
+	echo  123  |  passwd  --stdin  $abc &> /dev/null
+	echo  $abc密码设置成功
+
+[root@server0 ~]# /root/user.sh
+
+    黑洞设备：/dev/null  专用于收集无用的信息
+
+   为了增加脚本的灵活度，适用多变的环境------>变量 
+   变量：类似于容器， 以不变的名称，存储可以变化的值
+   变量名=储存的值     #为变量赋值
+#################################################
+   read :
+      1.产生交互  
+      2.记录用户在键盘上的输入
+      3.将记录的信息赋值给变量
+ 
+   -p ：屏幕的提示信息
+
+[root@server0 ~]# vim /root/user.sh 
+	#!/bin/bash
+	read  -p  '请输入您要创建的用户:'     abc
+	useradd $abc  &>  /dev/null
+	echo $abc创建成功
+	echo 123  | passwd  --stdin  $abc  &> /dev/null
+	echo $abc密码设置成功
+
+################################################
+• 以不变的名称存放的可能会变化的值
+– 变量名=变量值
+– 方便以固定名称重复使用某个值
+– 提高对任务需求、运行环境变化的适应能力
+
+• 设置变量时的注意事项
+– 若指定的变量名已存在,相当于为此变量重新赋值
+– 等号两边不要有空格
+– 变量名只能由字母/数字/下划线组成,区分大小写
+– 变量名不能以数字开头,不要使用关键字和特殊字符
+
+
+• 基本格式
+– 引用变量值:$变量名
+– 查看变量值:echo $变量名、 echo ${变量名}
+
+[root@server0 ~]# a=rhel
+[root@server0 ~]# echo $a
+rhel
+[root@server0 ~]# echo $a7
+
+[root@server0 ~]# echo ${a}7
+
+#################################################
+变量的种类
+一、环境变量：变量名一般都大写，由系统定义完成，用户直接使用
+
+    USER=永远储存当前系统登陆的用户名
+[root@server0 ~]# echo $USER
+[root@server0 ~]# su - dc 
+[dc@server0 ~]$ echo $USER
+[dc@server0 ~]$ exit
+logout
+[root@server0 ~]# su - student
+[student@server0 ~]$ echo $USER
+[student@server0 ~]$ exit
+logout
+[root@server0 ~]# 
+
+
+位置变量:由系统定义完成，用户直接使用,非交互式
+• 在执行脚本时,提供的命令行参数
+ – 表示为 $n,n为序号
+ – $1、$2、$3 、$4.. .. ${10}、${11}、.. ..
+
+案例：利用位置变量实现
+[root@server0 ~]# vim /root/user.sh
+  #!/bin/bash
+  useradd  $1  &> /dev/null
+  echo  $1创建成功
+  echo  123  |  passwd --stdin  $1  &> /dev/null
+  echo  $1密码设置成功
+
+[root@server0 ~]# /root/user.sh  nsd20
+
+
+[root@server0 ~]# vim /root/1.sh 
+ #!/bin/bash
+ cat -n $1 | head -$2
+
+[root@server0 ~]# /root/1.sh  /etc/passwd   3
+
+##############################################
+ 预定义变量:由系统定义完成，用户直接使用
+• 用来保存脚本程序的执行信息
+– 直接使用这些变量
+– 不能直接为这些变量赋值
+
+      $#   已加载的位置变量的个数(计算用户输入位置变量的个数)
+      $*   所有位置变量的值
+      $?   程序退出后的状态值,0表示正常,其他值异常
+
+[root@server0 ~]# vim /root/2.sh 
+  #!/bin/bash
+  echo $1
+  echo $2
+  echo $3
+  echo $#        #输出一共有多少个参数（求和）
+  echo $*        #输出所有位置变量的值
+[root@server0 ~]# /root/2.sh haha xixi hehe lele
+
+[root@server0 ~]# vim /root/1.sh 
+ #!/bin/bash
+ cat -n $1 | head -$2
+
+[root@server0 ~]# /root/1.sh  /etc/passwd   3
+
+################################################
+自定义变量:用户自主设置、修改及使用
+
+###############################################
+ 单引号 '  '  : 取消所有特殊字符的含义
+
+###############################################
+
+常用的测试选项
+• 检查文档状态
+	-e:文档存在为真
+	-d:文档存在,且为目录才为真
+	-f:文档存在,且为文件才为真
+	-r:文档存在,且具备读取权限才为真
+	-w:文档存在,且具备写入权限才为真
+	-x:文档存在,且具备执行权限才为真
+
+[root@server0 ~]# [ -d   /etc/passwd  ]
+[root@server0 ~]# echo $?
+[root@server0 ~]# [ -d  /home  ]
+[root@server0 ~]# [ -e  /home  ]
+[root@server0 ~]# [ -f  /home  ]
+[root@server0 ~]# [ -f  /etc/passwd  ]
+
+
+• 比较整数大小
+   -gt：大于
+   -ge：大于等于
+   -eq：等于
+   -ne：不等于
+   -lt：小于
+   -le：小于等于
+
+[root@server0 ~]# [  1  -gt  2  ]
+[root@server0 ~]# echo $?
+[root@server0 ~]# [  1  -eq  2  ]
+[root@server0 ~]# echo $?
+[root@server0 ~]# [  1  -ge  1  ]
+[root@server0 ~]# echo $?
+
+• 字符串比对
+   ==:两个字符串相等为真
+   !=:两个字符串不相等为真
+
+[root@server0 ~]# [ student == root ]
+[root@server0 ~]# echo $?
+
+[root@server0 ~]# [ student != root ]
+[root@server0 ~]# echo $?
+
+[root@server0 ~]# [ $USER == root ]
+[root@server0 ~]# echo $?
+
+################################################
+if双分支处理
+	if  [条件测试];then
+	   命令序列xx
+	else
+	   命令序列yy
+	fi
+
+案例：
+    利用read实现交互
+    用户输入一个用户名，脚本判断用户所输入的用户，是否存在
+    如果存在，输出用户存在
+    如果不存在，输出用户不存在
+[root@server0 ~]# vim /root/if01.sh
+   #!/bin/bash
+   read  -p   '请输入您要测试的用户名:'     user
+   id  $user &> /dev/null
+   if  [  $?  -eq  0  ];then   #判断上一条命令是否成功
+     echo $user用户已存在
+   else
+     echo $user用户不存在
+   fi
+
+
+案例：
+    利用位置变量实现命令行传递参数
+    参数为IP地址，脚本判断用户所输入IP地址，是否本机可以ping通
+    如果可以ping，输出 可以通信
+    如果不可以ping，输出  不可以通信
+
+[root@server0 ~]# vim /root/if02.sh 
+	#!/bin/bash
+	ping -c  2  $1  &> /dev/null
+	if  [ $?  -eq 0 ];then
+	  echo $1 本机可以通信
+	else
+	  echo $1 本机不可以通信
+	fi
+
+[root@server0 ~]# /root/if02.sh  192.168.1.1
+ 
+ 优化：
+
+[root@server0 ~]# vim /root/if02.sh 
+  #!/bin/bash
+  if  [  $#  -eq  0  ];then       #判断用户是否输入参数
+    echo 格式错误，请在脚本运行时添加参数
+    echo 参数为IP地址
+  else
+    ping -c 2   $1 &> /dev/null
+    if [ $?  -eq 0 ];then
+      echo $1 本机可以通信
+    else
+     echo $1 本机不可以通信
+    fi
+ fi
+#############################################
+for循环结构
+
+  循环:让计算机重复执行一个操作
+
+     for 变量名 in 值列表
+     do
+             命令序列
+     done
+
+
+     for  a   in  zhangsan  lisi  wangwu  dc
+      do
+          useradd $a
+         echo 123 | passwd --stdin $a
+      done
+
+ 造数：  {起始数值..结束数值}
+
+[root@server0 /]# cat /root/for01.sh
+	#!/bin/bash
+	for  a  in  {1..20}
+	do
+	  useradd stu$a  &> /dev/null
+	  echo stu$a创建成功
+	done
+[root@server0 /]# /root/for01.sh
+
+
+###############################################
+ $(  ) 或 反撇号`   `   
+         :将命令的输出，作为另一个命令的参数，参与下一个命令的运行
+
+[root@server0 /]# date +%F
+2018-09-12
+[root@server0 mnt]# cd /mnt
+[root@server0 mnt]# mkdir nsd-`date +%F`
+[root@server0 mnt]# ls
+[root@server0 mnt]# mkdir nsd-`date +%F`
+[root@server0 mnt]# ls
+[root@server0 mnt]# mkdir $(hostname)-$(date +%F)
+[root@server0 mnt]# ls
+         
+#################################################
+扩展案例：
+[root@server0 /]# vim /root/user.txt
+ 	yuanxiao
+	qingming
+	duanwu
+	wuyi
+	liuyi
+	wusi
+        ......
+ 请利用for循环：
+  该文件/root/user.txt内容，每一行为一个用户的名称
+  创建/root/user.txt文件中所有用户
+
+################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################################################ 
+if多分支处理
+  if [条件测试1];then
+ 	 命令序列xx
+  elif [条件测试2];then
+	 命令序列yy
+  elif [条件测试3];then
+	 命令序列cc
+   ......
+  else
+	 命令序列zz
+  fi
+
+案例:
+    利用read交互，让用户输入考试成绩
+    进行如下判断
+    如果成绩大于90 则 输出 优秀
+    如果成绩大于80 则 输出 良好
+    如果成绩大于70 则 输出 一般
+    如果成绩大于60 则 输出 合格
+    以上条件均不满足 ， 则 输出 再牛的肖邦，也弹不出哥的悲伤
+
+ [root@server0 ~]# vim  /root/if03.sh
+	#!/bin/bash
+	read  -p   '请输入您的成绩:'     num
+	if   [ $num -ge  90 ];then
+	   echo  优秀
+	elif   [ $num -ge  80 ];then
+	   echo  良好
+	elif   [ $num -ge  70 ];then
+	   echo  一般
+	elif   [ $num -ge  60 ];then
+	   echo  合格
+	else
+	   echo  再牛的肖邦，也弹不出哥的悲伤
+	fi
+###############################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

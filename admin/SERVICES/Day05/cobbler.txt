@@ -1,0 +1,223 @@
+Cobbler装机平台,不同版本的多系统的安装
+
+一  安装一个CentOS虚拟机  
+
+真机: 
+[root@room9pc01 ~]# ls /iso/
+CentOS-7-x86_64-DVD-1708.iso
+
+虚拟机要求:
+             1.硬盘大小50G
+             2.网络类型private1
+             3.软件包选择 "带GUI的服务器"
+             4.分区选择 "自动分区"
+
+             5.配置IP地址:192.168.4.168/24
+             6.将CentOS放入光驱设备,搭建本地Yum仓库
+             7.配置主机名:Cobbler.tedu.cn
+
+[root@Cobbler /]# mkdir /dvd
+[root@Cobbler /]# mount /dev/cdrom  /dvd/
+[root@Cobbler /]# ls /dvd/
+[root@Cobbler /]# cat /etc/yum.repos.d/dvd.repo 
+  [CentOS]
+  name=CentOS7
+  baseurl=file:///dvd
+  enabled=1
+  gpgcheck=0
+[root@Cobbler /]# 
+
+二、虚拟机设置  
+   1.设置防火墙为trusted
+  # firewall-cmd  --set-default-zone=trusted 
+
+   2.当前及永久设置SELinux状态为permissive
+ [root@Cobbler ~]# setenforce 0    #当前临时关闭
+ [root@Cobbler ~]# getenforce 
+ [root@Cobbler ~]# vim /etc/selinux/config 
+  SELINUX=permissive
+
+三、利用scp真机传递Cobbler.zip包到虚拟机192.168.4.168中
+ # scp /root/桌面/Cobbler.zip   root@192.168.4.168:/root/
+ 
+
+#################################################
+重设root密码  
+
+案例1:为虚拟机 server 重设管理密码
+1)重启系统,进入 recovery 恢复模式(修复模式) 
+按e键，找到 linux16 行，末尾添加 rd.break console=tty0
+按 ctrl + x 启动
+2)以可写方式重新挂载 /sysroot,并切换到此环境
+switch_root# mount  -o  remount,rw  /sysroot
+switch_root# chroot  /sysroot    
+sh-3.2#
+3)将root用户的密码设置为 redhat
+# echo  redhat  |  passwd  --stdin  root
+4)重设SELinux安全标签(安全增强版Linux)
+# touch  /.autorelabel    #让  SElinux  失忆
+5)先后执行 exit、reboot 完成修复
+# exit
+# reboot
+
+
+
+
+##################################################
+
+四、搭建Cobbler装机平台
+
+  Cobbler概述软件，管理dhcp、tftp、Web服务
+    自由的导入镜像与ks应答文件
+
+1.解压Cobbler.zip包
+# unzip /root/Cobbler.zip -d /
+# cd /Cobbler/
+# ls
+
+# unzip /Cobbler/cobbler.zip  -d  /opt/ 
+# ls /opt/cobbler
+
+五、安装cobbler主程序、工具包等
+[root@cobbler /]# yum -y install /opt/cobbler/*.rpm
+################################################################
+cobbler网络装机部署
+
+1.安装软件 cobbler cobbler-web dhcp tftp-server pykickstart httpd  tftp-server 
+
+ cobbler         #cobbler程序包
+ cobbler-web     #cobbler的web服务包
+ pykickstart     #cobbler检查kickstart语法错误
+ httpd           #Apache web服务
+ dhcp            #dhcp服务
+ tftp-server     #tftp服务
+
+2.配置cobbler
+[root@cobbler /]# vim  /etc/cobbler/settings
+ next_server:  192.168.4.168 #设置下一个服务器还为本机
+ server:  192.168.4.168      #设置本机为cobbler服务器
+ manage_dhcp:  1             #设置cobbler管理dhcp服务
+ pxe_just_once:   1          #防止客户端重复安装操作系统
+
+3.配置cobbler的dhcp
+[root@svr7 /]# vim  /etc/cobbler/dhcp.template 
+  :%s  /旧/新/g      #全文替换
+  :%s  /192.168.1/192.168.4/g    #全文替换
+
+    5 次替换，共 4 行  
+
+ 
+4.绝对路径解压cobbler_boot.tar.gz    #众多的引导文件
+
+# tar -tf /Cobbler/cobbler_boot.tar.gz  #查看包里面内容
+# tar -xPf  /Cobbler/cobbler_boot.tar.gz  #绝对路径释放
+
+# ls  /var/lib/cobbler/loaders/
+
+5.启动相关服务
+[root@svr7 /]# systemctl restart cobblerd
+[root@svr7 /]# systemctl enable cobblerd
+
+[root@svr7 /]# systemctl restart httpd
+[root@svr7 /]# systemctl enable httpd
+
+[root@svr7 /]# systemctl restart tftp
+[root@svr7 /]# systemctl enable tftp
+
+[root@svr7 /]# systemctl restart rsyncd   #同步服务
+[root@svr7 /]# systemctl enable rsyncd
+
+
+6.同步刷新cobbler配置
+[root@svr7 /]# cobbler sync   #检测配置是否正确
+......
+*** TASK COMPLETE ***
+
+
+# firefox https://192.168.4.168/cobbler_web
+
+   用户名：cobbler
+   密码：cobbler
+
+
+##########################################################################################################
+cobbler应用
+
+cobbler import --path=挂载点   --name=导入系统命名（随意起）
+导入安装镜像数据
+
+# mount /dev/cdrom  /dvd
+# ls /dvd/
+
+# cobbler import --path=/dvd  --name=CentOS7
+
+cobbler导入的镜像放在：/var/www/cobbler/ks_mirror
+
+[root@cobbler /]# cobbler list    #查看有哪些系统
+distros:
+   CentOS7-x86_64        #安装客户端至少2G内存
+
+profiles:
+   CentOS7-x86_64
+
+
+##############################################
+删除
+# cobbler list 
+# cobbler profile remove --name=CentOS7-x86_64  #删除菜单信息
+# cobbler distro remove --name=CentOS7-x86_64  #删除镜像信息
+
+
+###########################################
+
+# umount /dvd/
+# mount /dev/cdrom  /dvd   将光盘换成RHEL7
+# ls /dvd/
+
+  安装完成机器 默认root  密码  cobbler
+
+############################################################################################################
+自定义应答文件：开头注释行删除
+[root@cobbler ~]# system-config-kickstart  #生成ks文件
+
+必须默认kickstart文件存放位置：/var/lib/cobbler/kickstarts/
+
+[root@cobbler ~]# cobbler list
+
+修改kickstart文件：
+[root@cobbler ~]# cobbler profile edit --name=CentOS7.4-A  --kickstart=/var/lib/cobbler/kickstarts/自定义.cfg
+
+[root@cobbler ~]# cobbler profile report
+[root@cobbler ~]# cobbler sync  #同步配置
+
+############################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,39 @@
+1.Linux中黑洞设备是什么？
+    /dev/null
+
+2.Linux中 正确信息与错误信息都收集的  重定向是什么？
+            &>
+
+3.下列变量名中有效的shell变量名是（  C  ）
+   A：-2-time	B：_2$3     
+    C：trust_no_1   D：2004file
+4.vim编辑器有几种工作模式，分别是？
+    3种     命令模式   插入模式   末行模式
+
+5.开机挂载配置文件六个字段分别为什么？
+   /etc/fstab
+       设备路径    挂载点     文件系统类型    参数   备份标记  检测顺序  
+
+6.搭建smb服务，需要安装什么软件？
+     samba
+
+7.配置nfs共享，配置文件在哪里？
+      /etc/exports
+
+8.yum客户端配置文件放在什么路径下？具体都有哪些字段？
+    /etc/yum.repos.d/*.repo
+    []、name、baseurl、enabled、gpgcheck
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,37 @@
+安装后脚本:安装系统后自动搭建Yum
+
+ 服务端PXE服务器：1.共享光盘所有内容  2.搭建FTP或Web服务
+
+ 客户端：书写一个配置文件
+方式一：
+  echo '
+    [rhel7]
+    name=rhel7.4
+    baseurl=http://192.168.4.7/rhel7
+    enabled=1
+    gpgcheck=0' > /etc/yum.repos.d/rhel7.repo
+
+方式二：
+[root@svr7 ~]# cd /var/www/html/
+[root@svr7 html]# cat rhel7.repo
+[rhel7]
+name=rhel7.4
+baseurl=http://192.168.4.7/rhel7
+enabled=1
+gpgcheck=0
+[root@svr7 ~]# vim /var/www/html/ks.cfg
+%post --interpreter=/bin/bash
+ useradd  lisi
+ echo  123  |  passwd --stdin  lisi
+ cd  /etc/yum.repos.d/
+ wget  http://192.168.4.7/rhel7.repo
+%end
+##############################################
+
+
+
+
+
+
+
+

@@ -1,0 +1,191 @@
+   在真机上，利用clone-vm7新建一台虚拟机，名字:PXE-Server
+  
+   1.设置防火墙为trusted
+   2.当前及永久关闭SELinux
+   3.配置IP地址：192.168.4.122/24
+   4.搭建Yum仓库   
+   5.主机名：PXE.tedu.cn
+
+######################################################
+搭建一键装机平台
+一 、搭建DHCP服务
+1.安装dhcp
+2.修改配置文件
+subnet 192.168.4.0  netmask  255.255.255.0 {
+  range 192.168.4.180  192.168.4.230;
+  next-server  192.168.4.122;
+  filename  "pxelinux.0";
+}
+
+3.重起dhcpd服务，设置开机自起动
+
+#####################################################
+二、搭建tftp
+
+1.安装tftp-server
+2.启动tftp服务，设置开机自起动
+
+
+3. 部署pxeliunx.0
+ # yum provides */pxelinux.0
+ # rpm -ql syslinux | grep pxelinux.0
+
+ # cp /usr/share/syslinux/pxelinux.0  /var/lib/tftpboot/
+
+ # ls /var/lib/tftpboot/
+
+4. 部署光盘内容
+[root@PXE ~]# yum -y install httpd
+[root@PXE ~]# mkdir /var/www/html/rhel6
+[root@PXE ~]# mkdir /var/www/html/rhel7
+
+[root@PXE ~]# mount /dev/cdrom  /mnt/    #光盘为rhel7
+[root@PXE ~]# ls /mnt/
+[root@PXE ~]# cp -r  /mnt/*    /var/www/html/rhel7/
+
+[root@PXE ~]# umount  /mnt
+[root@PXE ~]# mount /dev/cdrom  /mnt/   #光盘为rhel6
+[root@PXE ~]# ls /mnt/
+[root@PXE ~]# cp -r  /mnt/*    /var/www/html/rhel6/
+
+[root@PXE ~]# du  -sh /var/www/html/rhel7/
+[root@PXE ~]# du  -sh /var/www/html/rhel6/
+
+
+5.部署rhel7、rhel6   的启动内核与驱动程序
+
+# mkdir /var/lib/tftpboot/rhel6
+# mkdir /var/lib/tftpboot/rhel7
+
+# cp /var/www/html/rhel6/isolinux/vmlinuz   
+     /var/www/html/rhel6/isolinux/initrd.img            
+     /var/lib/tftpboot/rhel6/
+
+# cp /var/www/html/rhel7/isolinux/vmlinuz  
+     /var/www/html/rhel7/isolinux/initrd.img               
+     /var/lib/tftpboot/rhel7/
+
+# ls /var/lib/tftpboot/rhel7
+# ls /var/lib/tftpboot/rhel6
+
+
+6.部署图形模块与背景
+# cp /var/www/html/rhel6/isolinux/vesamenu.c32  
+     /var/lib/tftpboot/
+
+# rpm -ql syslinux | grep jpg
+
+# cp /usr/share/doc/syslinux-4.05/sample/syslinux_splash.jpg   /var/lib/tftpboot/
+ 
+
+# ls /var/lib/tftpboot/
+
+7.部署菜单文件
+# mkdir /var/lib/tftpboot/pxelinux.cfg
+
+# cp /var/www/html/rhel6/isolinux/isolinux.cfg 
+     /var/lib/tftpboot/pxelinux.cfg/default
+
+# chmod 644 /var/lib/tftpboot/pxelinux.cfg/default
+
+# ls -l /var/lib/tftpboot/pxelinux.cfg/default
+
+
+8.修改菜单文件内容
+# vim /var/lib/tftpboot/pxelinux.cfg/default
+......
+menu background syslinux_splash.jpg
+menu title Welcome to PXE Server!
+......
+label linux
+  menu label Install RHEL7.2
+  kernel rhel7/vmlinuz
+  append initrd=rhel7/initrd.img
+
+label vesa
+  menu label Install RHEL6.7
+  kernel rhel6/vmlinuz
+  append initrd=rhel6/initrd.img 
+
+label local
+  menu label Boot from local drive
+  menu default                    #读秒结束最后默认选择
+  localboot 0xffff
+
+
+
+#####################################################
+三、搭建httpd服务共享光盘所有内容
+
+1.启动服务
+[root@PXE /]# systemctl restart httpd
+[root@PXE /]# systemctl enable httpd
+
+2.测试访问
+[root@PXE /]# firefox  http://192.168.4.122/rhel6
+[root@PXE /]# firefox  http://192.168.4.122/rhel7
+
+####################################################
+四、生成ks文件
+[root@PXE /]# yum -y install system-config-kickstart
+
+  修改Yum客户端配置文件的标示名
+   [development]
+
+
+[root@PXE /]# system-config-kickstart  #先看“软件包选择”
+        软件包选择：  在“桌面”一栏选择----->第一个为GNOME  则为rhel7
+
+    RHEL7的文件系统为xfs
+#####################################################
+
+[root@PXE ~]# vim /etc/yum.repos.d/rhel7.repo 
+     执行向rhel6的光盘
+
+ [development]
+ name=rhel7
+ baseurl=http://192.168.4.122/rhel6
+ enabled=1
+ gpgcheck=0
+
+[root@PXE ~]# yum clean all       #清空Yum缓存
+
+[root@PXE ~]# system-config-kickstart 
+        软件包选择：  在“桌面”一栏选择----->第一个为KDE桌面  则为rhel6
+
+    RHEL6的文件系统为ext4
+
+[root@PXE ~]# ls /root/ks*
+/root/ks6.cfg  /root/ks7.cfg
+
+#############################################
+五、指定ks应答文件
+
+1.共享ks应答文件
+[root@PXE ~]# cp /root/ks*  /var/www/html/
+[root@PXE ~]# ls /var/www/html/
+
+2.修改菜单文件
+
+# vim /var/lib/tftpboot/pxelinux.cfg/default
+
+label linux
+  menu label Install RHEL7.2
+  kernel rhel7/vmlinuz
+  append initrd=rhel7/initrd.img ks=http://192.168.4.122/ks7.cfg
+
+label vesa
+  menu label Install RHEL6.7
+  kernel rhel6/vmlinuz
+  append initrd=rhel6/initrd.img ks=http://192.168.4.122/ks6.cfg
+
+
+####################################################
+
+
+
+
+
+
+
+

@@ -1,0 +1,215 @@
+
+
+
+
+rsync同步操作
+
+• 命令用法
+– rsync [选项...]   源目录     目标目录
+
+• 同步与复制的差异
+– 复制:完全拷贝源到目标
+– 同步:增量拷贝,只传输变化过的数据
+
+
+• 本地同步
+– rsync [选项...] 本地目录1     本地目录2
+– rsync [选项...] 本地目录1/    本地目录2
+
+[root@svr7 ~]# mkdir /todir
+[root@svr7 ~]# rsync -a /boot /todir  //同步整个文件夹
+[root@svr7 ~]# rsync -a /boot/ /todir/ //只同步目录下的数据
+
+
+• rsync操作选项
+– -n:测试同步过程,不做实际修改
+– --delete:删除目标文件夹内多余的文档
+– -a:归档模式,相当于-rlptgoD
+– -v:显示详细操作信息
+– -z:传输过程中启用压缩/解压
+
+[root@svr7 ~]# mkdir  /nsd02
+[root@svr7 ~]# mkdir  /todir
+
+[root@svr7 ~]# touch  /nsd02/{1..5}.txt
+[root@svr7 ~]# ls  /nsd02
+
+[root@svr7 ~]# rsync -avz  /nsd02/  /todir/
+[root@svr7 ~]# ls  /todir
+
+[root@svr7 ~]# echo ahah >  /nsd02/1.txt
+[root@svr7 ~]# rsync -avz  /nsd02/  /todir/
+
+[root@svr7 ~]# cp  /etc/passwd   /nsd02
+[root@svr7 ~]# rsync  -avz  /nsd02/  /todir/
+
+
+
+# touch /todir/7.txt
+# rsync -avz --delete /nsd02/   /todir/
+
+# ls /nsd02
+# ls /todir
+
+# cp /etc/fstab   /todir
+# rsync -avz --delete /nsd02/   /todir/
+
+# ls /nsd02
+# ls /todir
+
+#################################################
+实现远程同步
+ rsync+ssh
+
+• 与远程的 SSH目录保持同步
+– 下行:rsync [...]  user@host:远程目录    本地目录
+– 上行:rsync [...]  本地目录    user@host:远程目录
+
+虚拟机A：
+#ls  /opt
+#rsync -avz --delete /opt/  root@192.168.4.207:/opt/
+
+#cp  /etc/group  /opt
+#rsync -avz --delete /opt/  root@192.168.4.207:/opt/
+
+虚拟机B：
+#ls /opt
+
+#################################################
+实时同步
+
+一、部署公钥、私钥  实现ssh无密码认证
+
+1.虚拟机A生成 公钥、私钥
+[root@svr7 ~]# ssh-keygen    #一路回车
+
+2.公钥、私钥生成的位置
+[root@svr7 ~]# ls /root/.ssh/
+
+3.传递公钥到虚拟机B
+[root@svr7 ~]# ssh-copy-id root@192.168.4.207
+
+# rsync -avz --delete /opt/  root@192.168.4.207:/opt/
+
+
+  wget ----》 /root/.ssh ---》mv  authorized_keys
+
+                       
+二、如何知道目录内容的变化，监控目录内容的变化
+
+1.真机传递软件包到虚拟机A中
+# scp /root/桌面/tools.tar.gz  root@192.168.4.7:/
+
+2.虚拟机A安装inotify-tools工具，实现监控目录内容的变化
+# tar -xf /tools.tar.gz -C /root/
+# mkdir /myrpm
+# tar -xf /root/tools/inotify-tools-3.13.tar.gz -C /myrpm
+# ls /myrpm/
+
+步骤1: 安装gcc与make
+步骤2:  ./configure      #首先切换到,解压目录内
+步骤3: make             #首先切换到,解压目录内
+步骤4: make install     #首先切换到,解压目录内
+[root@svr7 /]# which inotifywait  #查询命令所对应的程序
+/usr/local/bin/inotifywait
+[root@svr7 /]# echo $PATH   
+  
+##################################################
+
+inotifywait监控
+• 基本用法
+– inotifywait [选项] 目标文件夹
+• 常用命令选项
+– -m,持续监控(捕获一个事件后不退出)
+– -r,递归监控、包括子目录及文件
+– -q,减少屏幕输出信息
+– -e,指定监视的 modify、move、create、delete、
+attrib 等事件类别
+
+
+三、书写Shell脚本
+
+      死循环  while
+
+     while  [条件]
+      do
+              循环执行的操作
+      done
+
+##################################################
+[root@svr7 /]# vim /root/rsync.sh
+#!/bin/bash
+while  inotifywait -rqq /opt
+do
+rsync -az --delete /opt/  root@192.168.4.207:/opt/
+done
+
+[root@svr7 /]# /root/rsync.sh    #运行脚本
+
+##################################################
+   -rqq  #两个q没有输出信息
+
+################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

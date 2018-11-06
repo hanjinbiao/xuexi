@@ -1,0 +1,448 @@
+使用教学虚拟机
+
+• 每个学员机上有三台预先配置好的虚拟机
+ – server —— 作为练习用服务器
+ – desktop —— 作为练习用客户机
+ – classroom —— 提供网关/DNS/软件素材/DHCP服务等资源
+
+  优先开机classroom，再去开启server、desktop  
+
+一、真机还原命令：优先还原classroom
+
+[root@room9pc01 ~]# rht-vmctl reset classroom
+[root@room9pc01 ~]# rht-vmctl reset server[root@room9pc01 ~]# rht-vmctl reset desktop
+
+二、进入 虚拟机server 与  虚拟机desktop,检测Yum是否可用
+
+# yum  clean  all    #清空缓存
+# yum  repolist      #列出仓库信息
+#################################################
+案例4:编写一个判断脚本
+在 server0 上创建 /root/foo.sh 脚本
+ 1)当运行/root/foo.sh redhat,输出为fedora
+ 2)当运行/root/foo.sh fedora,输出为redhat
+ 3)当没有任何参数或者参数不是 redhat 或者fedora时,
+ 其错误输出产生以下信息: /root/foo.sh redhat|fedora
+
+[root@server0 ~]# vim /root/foo.sh
+ #!/bin/bash
+ if  [ $# -eq  0 ];then
+   echo '/root/foo.sh redhat|fedora' >&2  #变成错误输出
+   exit  36                   #程序退出返回值
+ elif  [ $1 == redhat ];then
+   echo fedora
+ elif  [  $1 == fedora ];then
+   echo redhat
+ else
+   echo '/root/foo.sh redhat|fedora' >&2  #变成错误输出
+   exit  25                   #程序退出返回值
+ fi
+                   
+#################################################
+扩展案例：
+[root@server0 /]# vim /root/user.txt
+ 	yuanxiao
+	qingming
+	duanwu
+	wuyi
+	liuyi
+	wusi
+        ......
+ 请利用for循环：
+  该文件/root/user.txt内容，每一行为一个用户的名称
+  创建/root/user.txt文件中所有用户
+
+ [root@server0 ~]# vim /root/for.sh
+ #!/bin/bash
+ for a in `cat /root/user.txt`
+ do
+  useradd $a &> /dev/null
+  echo $a创建成功
+ done
+
+################################################
+案例5:编写一个批量添加用户脚本
+在 server0 上创建 /root/batchusers 脚本
+1)此脚本要求提供用户名列表文件作为参数
+2)如果没有提供参数,此脚本应该给出提示 
+Usage: /root/batchusers,退出并返回相应值
+3)如果提供一个不存在的文件,此脚本应该给出提
+示 Input file not found,退出并返回相应值
+4)新用户的登录Shell为 /bin/false,无需设置密码
+5)用户列表测试文件:
+[root@server0 ~]# cat /root/userlist
+  zhangsan
+  lisi
+  harry
+  natasha
+  dc
+  tc
+  jack
+
+[root@server0 ~]# cat /root/batchusers 
+  #!/bin/bash
+  if  [ $# -eq 0 ];then
+    echo 'Usage: /root/batchusers' >&2
+    exit 2
+  elif  [  -f  $1 ];then
+    for i  in  `cat $1`
+    do
+     useradd -s /bin/false $i &> /dev/null
+     echo $i创建成功
+    done
+  else
+    echo 'Input file not found' >&2
+    exit 3
+  fi
+###############################################
+系统安全保护
+• Security-Enhanced Linux
+– 美国NSA国家安全局主导开发,一套增强Linux系统安
+全的强制访问控制体系
+– 集成到Linux内核(2.6及以上)中运行
+– RHEL7基于SELinux体系针对用户、进程、目录和文件
+提供了预设的保护策略,以及管理工具
+
+
+• SELinux的运行模式
+– enforcing(强制)、permissive(宽松)
+– disabled(彻底禁用)
+  
+ 任何一种运行模式，变成disabled(彻底禁用)都要经历重起系统
+
+切换运行模式
+– 临时切换:setenforce 1|0
+– 固定配置:/etc/selinux/config 文件
+
+修改两台虚拟机   Server与 Desktop
+[root@server0 ~]# getenforce 
+Enforcing   #强制模式                   
+[root@server0 ~]# setenforce 0   #修改当前状态为宽松模式
+[root@server0 ~]# getenforce 
+Permissive     
+              
+[root@server0 ~]# vim /etc/selinux/config 
+SELINUX=permissive
+
+###############################################
+虚拟机Server：搭建基本Web服务
+1.安装httpd(Apache)软件包（服务端软件）
+[root@server0 ~]# yum -y install httpd 
+
+2.重起程序（服务）
+[root@server0 ~]# systemctl restart httpd
+[root@server0 ~]# systemctl enable httpd  #开机自起
+ln -s '/usr/lib/systemd/system/httpd.service' '/etc/systemd/system/multi-user.target.wants/httpd.service'
+
+3.验证本机访问测试
+[root@server0 ~]# firefox 172.25.0.11
+
+4.书写一个页面
+    网页文件默认存放路径:/var/www/html/
+    默认网页文件的名字:index.html
+
+[root@server0 ~]# cat /var/www/html/index.html
+<marquee><font color=red><h1>NSD1808 阳光明媚
+ 滚动效果       字体颜色             最大字体
+
+[root@server0 ~]# firefox 172.25.0.11
+###############################################
+虚拟机Server：搭建FTP服务:文件数据传输
+
+1.安装软件包vsftpd
+2.重起vsftpd服务
+[root@server0 ~]# systemctl restart vsftpd
+[root@server0 ~]# systemctl restart vsftpd
+
+ 默认共享数据路径：/var/ftp
+
+3.本机测试
+[root@server0 ~]# firefox  ftp://172.25.0.11
+
+################################################
+ 防火墙： 隔离作用
+
+  硬件防火墙
+  软件防火墙
+
+ firewalld服务
+
+• 系统服务:firewalld
+• 管理工具:firewall-cmd、firewall-config
+[root@server0 ~]# systemctl restart firewalld
+[root@server0 ~]# firewall-config &
+
+##############################################
+• 根据所在的网络场所区分,预设保护规则集
+  – public:仅允许访问本机的ssh、ping、dhcp服务
+  – trusted:允许任何访问
+  – block:阻塞任何来访请求，明确拒绝
+  – drop:丢弃任何来访的数据包，直接丢弃
+
+ 数据包：  数据   源ip地址   目标IP地址
+
+防火墙进入区域的规则：匹配及停止
+    1.查看数据包种源ip地址，再查看所有的区域中，是否有该源IP地址的规则，那个区域有，则进入该区域
+
+    2.进入默认区域为public
+
+###############################################
+默认区域的修改
+虚拟机Server：
+  # firewall-cmd --get-default-zone   #查看默认区域
+虚拟机Desktop：
+  # ping 172.25.0.11   #可以通信
+
+虚拟机Server：
+  # firewall-cmd --set-default-zone=block #修改默认区域
+  # firewall-cmd --get-default-zone 
+虚拟机Desktop：
+  # ping 172.25.0.11   #不可以通信，有回应
+
+虚拟机Server：
+  # firewall-cmd --set-default-zone=drop #修改默认区域
+  # firewall-cmd --get-default-zone 
+虚拟机Desktop：
+  # ping 172.25.0.11   #不可以通信，没有回应
+#################################################
+添加服务
+
+虚拟机Server：
+# firewall-cmd --set-default-zone=public 
+# firewall-cmd --get-default-zone
+# firewall-cmd --zone=public --list-all
+    列出 public区域中规则
+# firewall-cmd --zone=public --add-service=http
+    为 public区域,添加允许的协议http
+# firewall-cmd --zone=public --list-all 
+
+虚拟机Desktop：
+  # firefox  172.25.0.11          #访问成功
+  # firefox  ftp://172.25.0.11    #访问失败
+
+
+################################################
+– 永久(permanent)
+虚拟机Server
+ # firewall-cmd --reload      #重新加载防火墙配置
+ # firewall-cmd --zone=public --list-all 
+
+ # firewall-cmd --permanent --zone=public 
+   --add-service=http
+
+ # firewall-cmd --zone=public --list-all
+ # firewall-cmd --reload 
+
+虚拟机Desktop
+  # firefox  172.25.0.11
+
+#############################################
+添加源IP规则设置
+虚拟机Server：单独拒绝172.25.0.10访问
+
+# firewall-cmd --zone=block --add-source=172.25.0.10
+
+
+##############################################
+  数据包：  数据   源ip地址   目标IP地址   目标端口号 80
+
+   端口号：  编号  标识程序及应用、服务
+
+   互联网常见协议：
+       http：超文本传输协议     默认端口号:80
+       https：安全的超文本传输协议    默认端口号:443
+       FTP：文件传输协议    默认端口号:21
+       DNS：域名解析协议    默认端口号:53
+       SMTP：用户发邮件协议    默认端口号:25
+       pop3：用户收邮件协议    默认端口号:110
+       telnet：运程管理协议     默认端口号:23
+       TFTP：简单的文件传输协议    默认端口号:69
+       SNMP：网络管理协议           默认端口号:161
+
+      协议的端口可以有root改变，也可以具备多个端口
+################################################
+
+
+实现本机的端口映射
+• 本地应用的端口重定向(端口1 --> 端口2)
+– 从客户机访问 端口1 的请求,自动映射到本机 端口2
+– 比如,访问以下两个地址可以看到相同的页面:
+
+  客户端访问172.25.0.11:5423 ----> 172.25.0.11:80
+
+虚拟机Server
+ # firewall-cmd --permanent --zone=public 
+   --add-forward-port=port=5423:proto=tcp:toport=80
+
+ # firewall-cmd --reload
+ # firewall-cmd --zone=public --list-all 
+
+虚拟机Desktop
+  # firefox  172.25.0.11:5423
+
+###############################################
+配置IPv6地址
+
+IPv4地址：32个二进制组成,利用点分隔,用4个十进制数表示
+
+IPv6地址：128个二进制组成,利用冒号分隔8部分,
+                 最终每一部分利用4个16进制数表示
+
+   每段内连续的前置 0 可省略、连续的多个 : 可简化为 ::
+   例如:        2003:ac18:0000:0000:0000:0000:0000:0305
+          2003:ac18::305
+
+虚拟机Server0
+# nmcli connection modify 'System eth0' 
+ipv6.method manual ipv6.addresses 2003:ac18::305/64  
+connection.autoconnect  yes
+
+# nmcli connection up 'System eth0'
+
+# ifconfig | head -4
+
+# ping6 2003:ac18::305
+
+##############################################
+配置聚合连接(链路聚合)
+
+      备份网卡                          eth1      eth2 
+ 
+                                                虚拟网卡team0  192.168.1.1
+
+
+1.创建虚拟网卡team0   参考 man teamd.conf--》/example
+# nmcli connection add  type team 
+  con-name team0 ifname team0 
+  autoconnect yes  
+  config  '{"runner": {"name": "activebackup"}}'
+ 
+#  nmcli connection  添加    类型为    team（组队）
+      配置文件名   team0   网卡名  team0
+      每次开机自动启用
+      工作模式为     热备份
+
+# ifconfig
+# nmcli  connection  delete  team0     #删除team0配置
+
+2.添加成员
+ # nmcli connection add type   team-slave 
+   con-name team0-1 ifname eth1 master team0
+
+ # nmcli connection add type  team-slave 
+   con-name team0-2 ifname eth2  master team0
+
+ # nmcli connection 添加  类型   team-成员
+     配置文件名为  team0-2  网卡名  eth2 主设备  为team0
+
+ # nmcli connection delete team0-1
+ # nmcli connection delete team0-2
+
+3. 为虚拟网卡team0配置IP地址
+# nmcli connection modify team0        
+  ipv4.method manual 
+  ipv4.addresses 192.168.1.1/24    
+  connection.autoconnect yes
+
+4.激活配置
+[root@server0 ~]# nmcli connection up team0
+[root@server0 ~]# nmcli connection up team0-1
+[root@server0 ~]# nmcli connection up team0-2
+
+5.专用于查看链路聚合的命令
+[root@server0 ~]# ifconfig  eth1  down
+[root@server0 ~]# teamdctl  team0 state
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

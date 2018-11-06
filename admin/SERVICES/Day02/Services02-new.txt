@@ -1,0 +1,469 @@
+
+
+
+
+
+
+
+DNS服务器构建
+
+DNS服务器的功能
+  – 正向解析:根据注册的域名查找其对应的IP地址
+  – 反向解析:根据IP地址查找对应的注册域名,不常用
+
+
+域名体系：
+            
+ 
+                                  .   根域       
+
+一级域名：  .com    .cn   .us  .hk   .tw   .jp   .kr 
+
+
+二级域名:  .cn.com    .us.com    .jp.com 
+
+
+三级域名:  sina.cn.com    nb.cn.com   dc.cn.com
+
+
+完整的主机名: web.sina.cn.com   ftp.sina.cn.com
+
+• Full Qualified Domain Name,完全合格主机名（FQDN）
+
+################################################
+
+    设置FQDN为www.nb.com
+  
+        ServerName  www.nb.com
+
+###############################################
+
+bind-9.9.4-29.el7.x86_64   //域名服务包
+bind-chroot-9.9.4-29.el7.x86_64   //提供虚拟根支持
+
+– 运行时的虚拟根环境:/var/named/chroot/    #牢笼政策
+– 系统服务:named
+– 默认端口: 53
+
+• 主配置文件: /etc/named.conf   #设置本服务器负责解析的域名
+• 地址库文件: /var/named/     #主机名与IP地址的对应关系
+
+
+
+
+###############################################
+搭建DNS服务器
+
+虚拟机A：
+1.安装bind与bind-chroot包
+
+2.修改主配置文件/etc/named.conf
+[root@svr7 ~]# cp /etc/named.conf /root/
+[root@svr7 ~]# vim /etc/named.conf
+  options {
+    	directory 	"/var/named";  #指定地址库文件位置
+    };
+
+  zone "tedu.cn" IN {      #指定本机服务负责解析的域名
+  	type master;           #指定本机为权威DNS服务器
+  	file "tedu.cn.zone";   #指定地址库文件名称
+   };
+
+3.建立地址库文件
+# cd  /var/named/
+# cp -p named.localhost  tedu.cn.zone  #保持属性不变
+# ls -l tedu.cn.zone
+# vim   tedu.cn.zone 
+
+	tedu.cn.    NS  svr7
+	svr7        A   192.168.4.7
+	www         A   1.1.1.1 
+
+4.重起named服务
+
+虚拟机B:
+# vim /etc/resolv.conf 
+ nameserver 192.168.4.7
+
+# nslookup www.tedu.cn 
+
+###########################################
+搭建多区域的DNS
+1.修改主配置文件/etc/named.conf   
+  zone "qq.com" IN {    
+  	type master;           
+  	file "qq.com.zone";   
+   };
+
+3.建立地址库文件
+# cd  /var/named/
+# cp -p   tedu.cn.zone  qq.com.zone #保持属性不变
+# ls -l qq.com.zone
+# vim   qq.com.zone
+	qq.com.    NS   svr7
+	svr7        A   192.168.4.7
+	www         A   2.2.2.2
+4.重起named服务
+
+#################################################
+特殊的解析记录
+
+一、DNS查询结果的轮询
+[root@svr7 /]# vim /var/named/tedu.cn.zone
+ tedu.cn.  NS  svr7
+ svr7       A   192.168.4.7
+ www        A   192.168.4.10
+ www        A   192.168.4.20
+ www        A   192.168.4.30
+ 
+[root@svr7 /]# systemctl restart named
+虚拟机B：
+[root@pc207 /]# ping www.tedu.cn 
+[root@pc207 /]# ping www.tedu.cn 
+
+二、泛域名解析
+虚拟机A：
+[root@svr7 /]# vim /var/named/tedu.cn.zone
+ *          A   1.2.3.4
+ tedu.cn.   A   3.3.3.3
+
+[root@svr7 /]# systemctl restart named
+
+虚拟机B：
+[root@pc207 /]# nslookup www.tedu.cn
+[root@pc207 /]# nslookup xixi.tedu.cn
+
+[root@pc207 ~]# nslookup tedu.cn
+
+三、有规律的泛域名解析
+
+     pc1.tedu.cn-------》192.168.20.1
+     pc2.tedu.cn-------》192.168.20.2
+     pc3.tedu.cn-------》192.168.20.3
+         ......
+     pc50.tedu.cn-------》192.168.20.50
+
+  造数函数： $GENERATE   起始点-结束点  
+
+[root@svr7 /]# vim /var/named/tedu.cn.zone
+
+   $GENERATE  1-50   pc$   A   192.168.20.$
+
+
+四、解析记录的别名 CNAME
+虚拟机A
+[root@svr7 /]# vim  /var/named/tedu.cn.zone
+  ftp       A       4.4.4.4
+  tts       CNAME   ftp
+
+[root@svr7 /]# systemctl restart named
+
+虚拟机B
+[root@pc207 /]# nslookup ftp.tedu.cn
+[root@pc207 /]# nslookup tts.tedu.cn
+
+
+ 请写出DNS常见的资源解析记录？
+    NS    A    CNAME
+
+#############################################
+DNS子域授权
+
+    父域：www.qq.com
+    
+    子域：www.bj.qq.com
+
+    父域DNS为虚拟机A，负责解析qq.com
+
+    子域DNS为虚拟机B，负责解析bj.qq.com
+
+虚拟机B：
+1.安装软件包bind  bind-chroot    
+1.修改主配置文件/etc/named.conf   
+ options {
+	directory 	"/var/named";
+ };
+ zone "bj.qq.com" IN {
+	type master;
+	file "bj.qq.com.zone";
+ };
+3.建立地址库文件
+# cp -p   named.localhost  bj.qq.com.zone #保持属性不变
+# vim     bj.qq.com.zone
+  bj.qq.com.  	NS	pc207
+  pc207           A  192.168.4.207
+  www             A  20.30.40.50
+4.重起named服务 
+
+
+##############################################
+子域授权配置
+虚拟机A：
+[root@svr7 /]# vim /var/named/qq.com.zone 
+  qq.com.    NS   svr7
+  bj.qq.com. NS   pc207
+  svr7       A    192.168.4.7
+  pc207      A    192.168.4.207
+  www        A    2.2.2.2
+[root@svr7 /]# systemctl restart named
+
+[root@pc207 /]# nslookup  www.bj.qq.com  192.168.4.7
+Server:		192.168.4.7
+Address:	192.168.4.7#53
+
+Non-authoritative answer:   #非权威解答
+Name:	www.bj.qq.com
+Address: 20.30.40.50
+
+
+###############################################
+ 递归解析：客户端询问DNS解析，DNS服务器与其他DNS服务器交流，最终将解析结果带回来的过程
+
+ 迭代解析：DNS服务器与其他DNS服务器交流的过程
+
+
+############################################
+• 递归查询是默认开启的
+– 也可以设置 recursion yes; 来明确启用
+
+• 若要禁止递归
+– 需要设置 recursion no;
+
+############################################
+主机映射记录文件/etc/hosts(起到DNS解析的功能)
+只为本机提供解析功能        
+
+[root@svr7 /]# vim  /etc/hosts
+192.168.4.110  www.sina.com
+
+[root@svr7 /]# ping www.sina.com
+PING www.sina.com (192.168.4.110)
+
+
+客户端解析DNS域名优先级：
+      1./etc/hosts
+      2./etc/resolv.conf----》DNS服务器
+
+############################################
+缓存DNS服务器,缓存加速
+
+搭建方式：
+• 方式1:全局转发
+– 将请求转发给指定的公共DNS(其他缓存DNS),请求递归服务
+
+• 方式2:根域迭代
+– 依次向根、一级、二级......域的DNS服务器迭代
+
+
+真机：搭建缓存DNS服务器
+
+1.真机搭建Yum仓库
+# cat /etc/redhat-release 
+ CentOS Linux release 7.4.1708 (Core) 
+
+# mkdir /dvd
+# mount /iso/CentOS-7-x86_64-DVD-1708.iso  /dvd/
+# ls /dvd/
+
+2.书写配置文件
+# cd  /etc/yum.repos.d/
+# mkdir  repo
+# mv  *.repo   repo
+# vim  dvd.repo
+ [dvd]
+ name=CentOS7
+ baseurl=file:///dvd
+ enabled=1
+ gpgcheck=0
+
+3.安装bind、bind-chroot
+4.查看真机DNS服务器地址
+[root@room9pc01 ~]# cat /etc/resolv.conf 
+# Generated by NetworkManager
+search tedu.cn
+nameserver 172.40.1.10
+
+5.修改DNS主配置文件，指定缓存DNS服务器配置（全局转发式）
+[root@room9pc01 ~]# cp /etc/named.conf /root/
+[root@room9pc01 ~]# vim /etc/named.conf
+ options {
+  directory       "/var/named";
+  forwarders  {  172.40.1.10;  };  #转发给中心DNS服务器
+  };
+
+[root@room9pc01 ~]# systemctl restart named
+
+6.验证：
+虚拟机A：
+[root@svr7 /]# nslookup www.sina.com 192.168.4.254
+
+################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  www.qq.com.   www.tedu.cn.

@@ -1,0 +1,243 @@
+使用教学虚拟机
+
+• 每个学员机上有三台预先配置好的虚拟机
+ – server —— 作为练习用服务器
+ – desktop —— 作为练习用客户机
+ – classroom —— 提供网关/DNS/软件素材/DHCP服务等资源
+
+  优先开机classroom，再去开启server、desktop  
+
+一、真机还原命令：优先还原classroom
+
+[root@room9pc01 ~]# rht-vmctl reset classroom
+[root@room9pc01 ~]# rht-vmctl reset server[root@room9pc01 ~]# rht-vmctl reset desktop
+
+二、进入 虚拟机server 与  虚拟机desktop,检测Yum是否可用
+
+# yum  clean  all    #清空缓存
+# yum  repolist      #列出仓库信息
+
+###################################################
+Set UID
+• 附加在属主的 x 位上
+– 属主的权限标识会变为 s
+– 适用于可执行文件,Set UID可以让使用者具有文件属主的身份及部分权限
+
+[root@server0 ~]# cp /usr/bin/touch /usr/bin/xixich
+
+[root@server0 ~]# chmod u+s /usr/bin/xixich
+[root@server0 ~]# ls -l /usr/bin/xixich
+[root@server0 ~]# ls -l /usr/bin/touch
+
+[root@server0 ~]# su - student
+
+[student@server0 ~]$ /usr/bin/touch  1.txt
+[student@server0 ~]$ /usr/bin/xixich  2.txt
+[student@server0 ~]$ ls -l 
+[student@server0 ~]$ exit
+
+#################################################
+Sticky Bit                     
+• 附加在其他人的 x 位上
+– 其他人的权限标识会变为 t
+– 适用于开放 w 权限的目录,可以阻止用户滥用 w 写入
+权限(禁止操作别人的文档)
+
+[root@server0 ~]# mkdir /home/public
+[root@server0 ~]# chmod ugo=rwx /home/public
+[root@server0 ~]# ls -ld /home/public
+
+[root@server0 ~]# chmod o+t /home/public
+[root@server0 ~]# ls -ld /home/public
+
+###############################################
+查找文本内容
+• 根据字符串模式提取文本行
+– grep [选项] '匹配模式' 文本文件...
+– 命令行 | grep [选项] '匹配模式'
+
+• 常用命令选项
+– -v,取反匹配
+– -i,忽略大小写
+
+[root@server0 ~]# grep  root  /etc/passwd
+[root@server0 ~]# grep  -v root  /etc/passwd
+
+[root@server0 ~]# grep  -i ROOT  /etc/passwd
+
+
+• 常用的匹配模式
+– word  包含字符串word
+– ^word 以字符串word开头
+– word$ 以字符串word结尾
+
+[root@server0 ~]# grep root  /etc/passwd
+
+[root@server0 ~]# grep ^root  /etc/passwd
+
+[root@server0 ~]# grep root$  /etc/passwd
+[root@server0 ~]# grep bash$  /etc/passwd
+
+[root@server0 ~]# grep ^UUID  /etc/fstab
+[root@server0 ~]# grep ^127   /etc/hosts
+显示/etc/login.defs配置文件有效信息（去除空行  去除注释行）
+# grep -v ^# /etc/login.defs 
+
+
+# grep -v ^# /etc/login.defs  |  grep  -v  ^$ 
+
+
+# grep -v ^# /etc/login.defs  |  grep  -v  ^$   >  /opt/1.txt
+
+
+#################################################
+查找文件
+• 根据预设的条件递归查找对应的文件
+– find [目录] [条件1] [-a|-o] [条件2] ...
+
+– 常用条件表示:
+  -type 类型(f文本文件、d目录、l快捷方式)
+  -name "文档名称"
+  -size +|-文件大小(k、M、G)
+  -user 用户名
+
+# find /boot/  -type d    #查找/boot目录下是目录的
+
+# find /boot/  -type f    #查找/boot目录下是文件的
+
+# find /boot/  -type l    #查找/boot目录下是快捷方式
+
+# ls /boot/grub/menu.lst 
+
+# ls -l /boot/grub/menu.lst
+
+统计命令
+[root@server0 ~]# wc -l /etc/passwd  #统计行数
+
+统计/etc目录下以".conf"结尾的有多少个？
+# find /etc/ -name "*.conf"  
+# find /etc/ -name "*.conf"  | wc -l
+
+
+# find /etc/ -name "*tab"  
+# find /etc/ -name "*tab"   | wc -l
+
+# find /dev/ -name "tty*"   
+# find /dev/ -name "tty*"   | wc -l 
+
+[root@server0 ~]# mkdir /root/nsd1808
+[root@server0 ~]# touch /root/nsd01.txt
+[root@server0 ~]# touch /root/nsd02.txt              
+
+# find /root/ -name "nsd*"
+
+# find /root/ -name "nsd*"  -type f  #默认两个条件都满足
+
+# find /root/ -name  "nsd*"  -type  d
+
+#############################################
+ -size  +10M   #大于10M
+ -size  -10M   #小于10M
+ 
+   k(小写)  M(大写)  G(大写)
+
+[root@server0 ~]# find /boot/ -size +10M
+
+[root@server0 ~]# ls -lh /boot/initr*
+
+[root@server0 ~]# find /boot/ -size -10M
+
+##############################################
+-user 用户名     #按照文档的所有者
+
+  /proc/:所占用的空间不是硬盘，而是内存
+
+[root@server0 ~]# find / -user student
+
+[root@server0 ~]# find / -user student -type d
+
+[root@server0 ~]# find / -user student -type f
+
+
+• 根据名称查找,忽略大小写
+– -iname
+[root@server0 /]# find /etc/ -iname "PASSWD"
+[root@server0 /]# find /etc/ -name "PASSWD"
+
+• 根据账号名称或所属组
+– -user、-group
+[root@server0 /]# find /home/ -group student
+
+• 限制目录查找的深度(最大层数)
+– -maxdepth
+# find  /etc/  -maxdepth  1    -name "*.conf"
+# find  /etc/  -maxdepth  2    -name "*.conf"
+# find  /etc/  -maxdepth  3    -name "*.conf"
+
+
+• 使用find命令的 -exec 操作
+– find .. .. -exec 处理命令 {} \;
+– 优势:以 {} 代替每一个结果,逐个处理,遇 \; 结束
+
+# rm -rf /opt/*
+# find /etc/ -name "*tab" 
+# find /etc/ -name "*tab"  -exec cp {}  /mnt/  \;
+# ls /mnt/
+
+# find /boot -size +10M  
+# find /boot -size +10M  -exec cp {}  /opt/   \;
+# ls /opt
+
+
+• 使用find命令完成以下任务
+– 找出所有用户 student 拥有的文件
+– 把它们拷贝到 /root/findfiles/ 文件夹中
+
+# mkdir /root/findfiles
+# find  /  -user  student   -type  f 
+
+# find  /  -user  student   -type  f  
+  -exec cp  {}    /root/findfiles/     \;
+
+# ls  -A  /root/findfiles/
+
+############################################
+• 根据文件修改时间，所有的时间都是过去时间
+
+ -mtime +10   #过去的   10天之前修改和创建的文档 
+
+ -mtime -10   #过去的   10天之内修改和创建的文档 
+
+  var:存放经常变化的数据
+
+[root@server0 /]# find /var/log/ -mtime -10
+[root@server0 /]# find /var/log/ -mtime +10
+[root@server0 /]# find /var/log/ -mtime +1000
+
+##############################################
+
+  分  时  日  月 周    执行动作（提高执行的可靠性，书写绝对路径）
+
+[root@server0 /]# which find   #查询命令所对应的程序
+
+
+  首先激活网卡，再去修改DNS服务器配置文件
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

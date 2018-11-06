@@ -1,0 +1,433 @@
+使用教学虚拟机
+
+• 每个学员机上有三台预先配置好的虚拟机
+ – server —— 作为练习用服务器
+ – desktop —— 作为练习用客户机
+ – classroom —— 提供网关/DNS/软件素材/DHCP服务等资源
+
+  优先开机classroom，再去开启server、desktop  
+
+一、真机还原命令：优先还原classroom
+
+[root@room9pc01 ~]# rht-vmctl reset classroom
+[root@room9pc01 ~]# rht-vmctl reset server[root@room9pc01 ~]# rht-vmctl reset desktop
+
+二、进入 虚拟机server 与  虚拟机desktop,检测Yum是否可用
+
+# yum clean  all    #清空缓存
+# yum repolist      #列出仓库信息
+
+###################################################
+管理用户和组
+
+   用户帐号作用：
+      1. 访问控制的设置，不同的用户具备不同权限
+      2. 提高安全可靠性
+
+   组帐号作用：方便管理用户帐号
+
+     用户帐号标识： UID 
+        管理员UID为0
+        系统程序用户 默认1～999
+        所有普通用户UID默认从1000起始
+
+      组帐号标识： GID
+
+      组帐号分类： 基本组     附加组（从属组）
+        所有用户至少属于一个组
+        基本组：由Linux系统创建，由Linux将用户加入，与用户同名
+        附加组（从属组）：由root用户创建
+
+###############################################
+ /etc/passwd:用户基本信息存放在 /etc/passwd 文件
+
+[root@server0 /]# head -1 /etc/passwd
+  root:x:0:0:root:/root:/bin/bash
+  用户名:密码占位符:UID:基本组GID:用户描述信息:家目录:解释器
+
+
+
+• 使用 useradd 命令
+– useradd [选项]... 用户名
+
+• 常用命令选项
+– -u 用户id、-d 家目录路径、-s 登录解释器、-G 附加组
+  用户名:密码占位符:UID:基本组GID:用户描述信息:家目录:解释器
+[root@server0 /]# useradd nsd01
+[root@server0 /]# id nsd01            #查看基本信息
+[root@server0 /]# grep nsd /etc/passwd
+[root@server0 /]# useradd nsd02
+[root@server0 /]# grep nsd /etc/passwd
+
+[root@server0 /]# useradd -u 1600 nsd05  #指定UID
+[root@server0 /]# grep nsd /etc/passwd
+[root@server0 /]# id nsd05
+
+# useradd -d /opt/nsd07  nsd07  #指定用户家目录创建
+# grep nsd07 /etc/passwd
+# ls /opt/
+
+
+  -s：登录解释器 
+
+   /sbin/nologin :禁止用户登陆系统
+
+[root@server0 /]# useradd -s /sbin/nologin nsd08
+[root@server0 /]# grep nsd08 /etc/passwd
+
+[root@server0 /]# groupadd tarena
+[root@server0 /]# useradd -G tarena harry  #指定附加组
+[root@server0 /]# id harry
+
+#############################################
+重定向输出:将前面命令的输出结果，写入文本文件
+  
+   >：覆盖重定向
+   >>：追加重定向
+[root@server0 /]# ls --help
+[root@server0 /]# ls --help > /opt/ls.txt
+[root@server0 /]# vim /opt/ls.txt
+[root@server0 /]# less /opt/ls.txt
+[root@server0 /]# hostname > /opt/ls.txt
+[root@server0 /]# cat  /opt/ls.txt
+
+[root@server0 /]# hostname >> /opt/ls.txt
+[root@server0 /]# cat /opt/ls.txt
+[root@server0 /]# ifconfig eth0 >> /opt/ls.txt
+
+
+[root@server0 /]# echo hello world
+[root@server0 /]# echo hello world > /opt/ls.txt
+[root@server0 /]# cat /opt/ls.txt
+
+[root@server0 /]# echo A.tedu.cn  >  /etc/hostname
+[root@server0 /]# cat /etc/hostname
+[root@server0 /]# hostname
+
+ 管道  |  :将前面命令的输出结果，交由面后命令处理
+
+[root@A ~]# head -12 /etc/passwd
+[root@A ~]# head -12 /etc/passwd | tail -5
+     
+[root@A ~]# cat -n /etc/passwd 
+[root@A ~]# cat -n /etc/passwd | head -12 | tail -5
+
+[root@A ~]# ifconfig | less
+[root@A ~]# ifconfig | head -2
+
+[root@A ~]# echo 1+2 | bc 
+
+##################################################
+
+• 使用 passwd 命令
+– passwd [用户名]
+
+[root@A ~]# passwd nsd01
+更改用户 nsd01 的密码 。
+新的 密码：                                 #输入密码
+无效的密码： 密码是一个回文
+重新输入新的 密码：                    #输入密码
+passwd：所有的身份验证令牌已经成功更新。
+[root@A ~]# su - nsd01  #临时切换用户身份： su  -  用户名
+[nsd01@A ~]$ passwd 
+Changing password for user nsd01.
+Changing password for nsd01.
+(current) UNIX password:           #输入旧密码
+New password:                      #输入新密码
+Retype new password:               #重新输入新密码
+passwd: all authentication tokens updated successfully.
+[nsd01@A ~]$ exit
+
+################################################
+非交互式设置用户密码
+
+– echo '密码' | passwd --stdin 用户名
+
+[root@A ~]# echo  123  |  passwd --stdin nsd01
+
+[root@A ~]# echo  123  |  passwd --stdin nsd02
+
+################################################
+用户密码信息存放在 /etc/shadow 文件
+ 用户名：密码加密字符串:上一次修改密码的时间
+
+  自1970-1-1到上一次修改密码时间经过的天数
+
+#############################################
+
+修改用户属性
+• 使用 usermod 命令
+– usermod [选项]... 用户名
+
+• 常用命令选项
+– -u 用户id、-d 家目录路径、-s 登录解释器、-G 附加组
+
+[root@A ~]# useradd nsd10
+[root@A ~]# grep nsd10 /etc/passwd
+
+# usermod -u 1700 -s /sbin/nologin   -d /opt/abc   
+  -G tarena  nsd10
+
+[root@A ~]# grep nsd10 /etc/passwd
+[root@A ~]# id nsd10
+
+###############################################
+ 
+删除用户
+• 使用 userdel 命令
+– userdel [-r] 用户名       # -r:连同用户家目录一并删除
+
+[root@server0 ~]# userdel  alex
+[root@server0 ~]# id alex
+id: alex: no such user
+
+###############################################
+管理组账号
+
+组基本信息存放在 /etc/group 文件
+[root@A ~]# grep stugrp  /etc/group
+  stugrp:x:2002:
+
+    组名：密码占位符：组的GID：组的成员列表
+
+
+
+• 使用 groupadd 命令
+– groupadd [-g 组ID] 组名
+
+[root@A ~]# groupadd  stugrp
+[root@A ~]# grep  stugrp   /etc/group   #查看组的信息
+stugrp:x:2002:
+[root@A ~]# useradd  kenji
+[root@A ~]# useradd  chihiro
+[root@A ~]# useradd  jack
+[root@A ~]# useradd  natasha
+
+
+
+################################################
+• 使用 gpasswd 命令
+– gpasswd -a 用户名  组名
+– gpasswd -d 用户名  组名
+
+[root@A ~]# gpasswd -a kenji stugrp
+[root@A ~]# grep stugrp  /etc/group
+
+[root@A ~]# gpasswd -a natasha stugrp
+[root@A ~]# grep stugrp /etc/group
+
+[root@A ~]# gpasswd -d kenji stugrp
+[root@A ~]# grep stugrp /etc/group
+
+[root@A ~]# gpasswd -a jack stugrp
+[root@A ~]# grep stugrp /etc/group
+
+[root@A ~]# gpasswd -a chihiro stugrp
+[root@A ~]# grep stugrp /etc/group
+
+删除组
+• 使用 groupdel 命令
+– groupdel 组名
+
+###############################################
+创建一个用户Linux有那些文件会改变？
+
+[root@A ~]# grep nsd20 /etc/passwd
+[root@A ~]# ls /home/
+[root@A ~]# grep nsd20 /etc/shadow
+[root@A ~]# grep nsd20 /etc/group
+
+##############################################
+tar备份与恢复
+
+  归档及压缩：1.零散的文件归成一个  2.占用硬盘空间变小
+
+常见的压缩格式及命令工具:
+  .gz ---> gzip
+  .bz2 ---> bzip2
+  .xz ---> xz
+
+制作归档及压缩（打包----->tar包）
+格式：tar 选项    /路径/tar包名字     /路径/源文件   /路径/源文件
+ 
+解包
+格式：tar 选项    /路径/tar包名字     /路径/释放的位置
+
+
+– -c:创建归档
+– -x:释放归档
+– -f:指定归档文件名称
+– -z、-j、-J:调用 .gz、.bz2、.xz 格式的工具进行处理
+– -t:显示归档中的文件清单
+– -C（大写）:指定释放位置
+
+打包：
+    tar -zcf  /路径/tar包名字        /路径/源文件
+    tar -jcf  /路径/tar包名字        /路径/源文件
+    tar -Jcf  /路径/tar包名字        /路径/源文件
+     选项顺序要求：-f必须在最后
+解包：
+    tar  -xf  /路径/tar包名字   -C /路径/指定释放位置
+
+
+红色：压缩包
+
+ [root@A ~]# rm -rf /opt/*
+ [root@A ~]# rm -rf /mnt/*
+ # tar -zcf  /opt/nsd02.tar.gz   /home/  /boot/
+ # ls /opt/
+
+ # tar -jcf  /opt/test01.tar.bz2  /home/  /boot/
+ # ls /opt/
+
+ # tar -Jcf  /opt/file01.tar.xz   /home/  /boot/
+ # ls /opt/
+
+ # tar -xf   /opt/nsd02.tar.gz   -C    /mnt/
+ # ls  /mnt/
+ # ls  /mnt/boot/
+
+################################################
+查看tar包内的内容
+[root@A ~]# tar -tf /opt/file01.tar.xz 
+
+
+案例2:创建一个备份包
+使用 tar 工具完成以下备份任务:
+– 创建一个名为 /root/backup.tar.bz2 的归档文件
+– 其中包含 /usr/local 目录中的内容
+– tar 归档必须使用 bzip2 进行压缩
+
+# tar -jcf  /root/backup.tar.bz2     /usr/local/
+# ls /root/
+
+# tar -tf /root/backup.tar.bz2    #查看包内容
+
+################################################
+NTP时间同步
+
+NTP网络时间协议
+• Network Time Protocol
+– NTP服务器为客户机提供标准时间
+– NTP客户机需要与NTP服务器保持沟通
+
+  服务端：虚拟机classroom
+
+  客户端：虚拟机Server
+  1.安装chrony软件包（客户端软件：专用于访问服务的软件）
+ [root@A ~]# yum -y install chrony
+ [root@A ~]# rpm -q chrony
+
+  2.修改程序主配置文件，指定服务端位置
+    在Linux大多数配置文件中，以#开头的行为注释行 
+ [root@A ~]# vim /etc/chrony.conf 
+  #server 0.rhel.pool.ntp.org iburst
+  #server 1.rhel.pool.ntp.org iburst
+  #server 2.rhel.pool.ntp.org iburst
+  server classroom.example.com iburst
+
+  3.重起程序
+ [root@A ~]# systemctl restart chronyd #重起chronyd
+ [root@A ~]# systemctl enable chronyd  #设置为开机自起
+   daemon:超级守护进程
+
+  4.验证：
+ [root@A ~]# date -s  "2008-10-1  12:00"
+  2008年 10月 01日 星期三 12:00:00 CST
+ [root@A ~]# date
+ [root@A ~]# systemctl restart chronyd
+ [root@A ~]# date
+ [root@A ~]# date
+
+############################################
+cron计划任务
+
+周期性任务
+• 软件包:cronie、crontabs
+• 系统服务:crond
+• 日志文件:/var/log/crond   排除故障
+
+• 配置任务格式
+– 分   时   日   月   周    任务命令行(绝对路径)
+ 23  14  *  *  *   /bin/echo hiya
+
+	*:匹配范围内任意时间
+	,:分隔多个不连续的时间点
+	-:指定连续时间范围
+	/n:指定时间频率,每n
+
+   每分钟记录当前系统的时间，写入到/opt/time.txt
+[root@A ~]# date >> /opt/time.txt
+[root@A ~]# cat /opt/time.txt
+
+[root@A ~]# crontab -e -u root   #以root书写计划任务
+[root@A ~]# crontab -l -u root
+*  *  *  *  *   date  >>  /opt/time.txt
+
+[root@A ~]# ls /var/spool/cron/   #任务文件存放路径
+[root@A ~]# cat /var/spool/cron/root  #查看任务文件内容 
+
+[root@A ~]# cat /opt/time.txt   #查看结果
+
+################################################
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

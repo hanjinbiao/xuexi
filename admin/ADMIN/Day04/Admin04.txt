@@ -1,0 +1,295 @@
+使用教学虚拟机
+
+• 每个学员机上有三台预先配置好的虚拟机
+ – server —— 作为练习用服务器
+ – desktop —— 作为练习用客户机
+ – classroom —— 提供网关/DNS/软件素材/DHCP服务等资源
+
+  优先开机classroom，再去开启server、desktop  
+
+一、真机还原命令：优先还原classroom
+
+[root@room9pc01 ~]# rht-vmctl reset classroom
+[root@room9pc01 ~]# rht-vmctl reset server[root@room9pc01 ~]# rht-vmctl reset desktop
+
+二、进入 虚拟机server 与  虚拟机desktop
+
+   用户名：root   密码为：redhat
+   
+    虚拟机server
+          主机名：server0.example.com
+          系统版本：RHEL7.0
+      eth0网卡IP地址：172.25.0.11
+
+    虚拟机desktop
+          主机名：desktop0.example.com
+          系统版本：RHEL7.0
+      eth0网卡IP地址：172.25.0.10
+
+三、真机远程管理
+[root@room9pc01 ~]# ping 172.25.0.11
+[root@room9pc01 ~]# ping 172.25.0.10
+
+远程管理的命令：ssh   登陆对方的用户名@对方的IP地址
+
+[root@room9pc01 ~]# ssh root@172.25.0.11
+Last login: Wed Sep  5 09:11:52 2018
+[root@server0 ~]# ifconfig 
+[root@server0 ~]# exit
+登出
+Connection to 172.25.0.11 closed.
+[root@room9pc01 ~]# 
+
+  Ctrl + shift + t :新开一个终端
+
+
+   ssh -X:在远程管理时，本地运行对方的图形程序
+
+[root@room9pc01 ~]# ssh -X root@172.25.0.11
+
+[root@server0 ~]# firewall-config    #防火墙图形工具
+
+#################################################
+四、为真机设置永久的别名，修改配置文件
+
+  设置永久的别名配置文件：/root/.bashrc   系统级配置文件
+[root@room9pc01 ~]# vim /root/.bashrc 
+ # .bashrc
+ alias  gos='ssh  -X  root@172.25.0.11'
+ alias  god='ssh  -X  root@172.25.0.10' 
+
+ 新开一个全新的终端
+[root@room9pc01 ~]# gos
+[root@room9pc01 ~]# god
+
+################################################
+软件包的管理
+
+1.由classroom提供光盘RHEL7.0所有内容，具备软件包
+  http:超文本传输协议
+   虚拟机classroom搭建Web服务器，共享光盘RHEL7.0所有内容
+
+   真机打开浏览器：http://classroom.example.com/
+
+  classroom.example.com/content/rhel7.0/x86_64/dvd
+
+2.下载软件包
+
+  wget 下载工具     打开网页，按Ctrl+f  输入vsftpd
+
+# cd /opt/
+
+# wget http://classroom.example.com/content/rhel7.0/x86_64/dvd/Packages/vsftpd-3.0.2-9.el7.x86_64.rpm
+
+# ls
+
+3.安装软件包的命令
+使用rpm命令管理软件,默认不允许用户做任何选择
+
+• RPM Package Manager,RPM包管理器
+– rpm -q 软件名...                       #查询当前系统软件是否安装
+– rpm -ivh 软件名-版本信息.rpm...   #安装软件包
+– rpm -e 软件名...                              #卸载
+
+[root@server0 opt]# rpm -ql vsftpd  #列出安装清单
+
+了解：导入红帽签名信息
+[root@server0 /]# wget http://classroom.example.com/content/rhel7.0/x86_64/dvd/RPM-GPG-KEY-redhat-release
+
+[root@server0 /]# rpm --import /RPM-GPG-KEY-redhat-release 
+
+##############################################
+[root@server0 /]# rpm -q vsftpd
+[root@server0 /]# rpm -q firefox    #查询软件是否安装
+
+[root@server0 /]# rpm -ivh /opt/vsftpd-3.0.2-9.el7.x86_64.rpm       #安装软件
+
+[root@server0 /]# rpm -e vsftpd     #卸载软件
+[root@server0 /]# rpm -q vsftpd     #查询软件是否卸载
+
+[root@server0 /]# rpm -ql firefox   #查询安装清单
+
+################################################
+   vsftpd-3.0.2-9.el7.x86_64.rpm(包名)
+   vsftpd(软件名)
+################################################
+常见的错误信息：依赖关系错误
+错误：依赖检测失败：
+	bind = 32:9.9.4-14.el7 被 bind-chroot-32:9.9.4-14.el7.x86_64 需要
+
+################################################
+Yum软件包仓库，自动解决依赖关系
+
+ 服务：为客户端自动解决依赖关系，安装软件包
+
+  服务端：虚拟机classroom.example.com
+
+    1.众多的软件包  2.仓库清单文件（repodata）
+    3.构建Web服务或FTP服务传递数据
+
+  客户端：虚拟机server0.example.com
+
+  客户端配置文件：/etc/yum.repos.d/*.repo
+     错误的配置文件会影响正确的配置文件
+[root@server0 ~]# rm -rf  /etc/yum.repos.d/*
+[root@server0 ~]# vim  /etc/yum.repos.d/abc.repo
+   [rhel7]          #仓库标识
+   name=rhel7.0     #仓库描述信息
+   baseurl=http://classroom.example.com/content/rhel7.0/x86_64/dvd/       #指定服务端位置
+   enabled=1        #是否启用该文件
+   gpgcheck=0       #是否检测红帽签名
+
+#################################################
+Yum使用
+	# yum  repolist           #列出仓库信息
+	# yum -y  install httpd   #安装软件包
+	# yum -y  install sssd
+	# yum -y  install gcc
+	# yum -y  install system-config-kickstart
+	# yum  remove   软件名          #卸载
+	# yum clean all            #清缓存
+##################################################
+虚拟机Server：升级内核
+
+1.下载内核软件包
+# cd /opt
+# wget  http://classroom.example.com/content/rhel7.0/x86_64/errata/Packages/kernel-3.10.0-123.1.2.el7.x86_64.rpm
+
+# ls
+
+2.升级内核
+# uname  -r
+# rpm -ivh /opt/kernel-3.10.0-123.1.2.el7.x86_64.rpm 
+# reboot 
+# gos
+# uname -r
+ 3.10.0-123.1.2.el7.x86_64
+################################################# 
+配置网络参数
+一、配置永久的主机名
+[root@server0 ~]# vim /etc/hostname
+[root@server0 ~]# cat /etc/hostname
+A.tedu.cn
+[root@server0 ~]# hostname
+[root@server0 ~]# exit
+登出
+Connection to 172.25.0.11 closed.
+[root@room9pc01 ~]# gos
+[root@A ~]# hostname
+
+二、配置永久的IP地址、子网掩码、网关地址
+
+网卡配置文件/etc/sysconfig/network-scripts/ifcfg-eth0
+
+通过命令nmcli connection  #可以修改网卡配置文件
+
+1.查看命令识别网卡的名称
+[root@A ~]# nmcli connection show
+
+2.进行配置永久的IP地址、子网掩码、网关地址
+# nmcli connection modify 'System eth0'       	ipv4.method manual   
+ipv4.addresses '172.25.0.110/24 172.25.0.254'        
+connection.autoconnect yes
+
+# nmcli connection  修改   '识别的网卡名'
+ ipv4.方法   手工配置
+ ipv4.addresses 'IP地址/子网掩码  网关地址' 
+  每次开机自动激活配置
+
+3.激活配置 
+[root@A ~]# nmcli connection up 'System eth0'
+
+方式2：nmtui  修改IP地址为172.25.0.120/24
+
+      1. Edit a connection（回车）#编辑连接
+      2. System eth0（回车）          #选择网卡
+      3. Require IPv4 addressing for this connection
+                 #利用IPv4进行激活 
+
+      4. Automatically connect
+                 #每次开机自动激活配置  
+
+[root@A ~]# nmcli  connection  up  'System eth0'
+
+
+查看网关命令：
+[root@A ~]# route  -n    #以数字的方式显示
+
+     Gateway         
+         172.25.0.254     
+
+#################################################
+三、配置永久的DNS服务器地址
+[root@A ~]# vim /etc/resolv.conf 
+nameserver  172.25.254.254
+
+#################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

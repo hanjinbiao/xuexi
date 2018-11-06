@@ -1,0 +1,60 @@
+案例练习,准备:
+            rht-vmctl  reset  classroom
+            rht-vmctl  reset  server
+	    rht-vmctl  reset  desktop
+######################################################
+案例1:在在 server0、desktop0 上操作
+– 将防火墙默认区域设置为trusted
+
+
+
+案例2:在server上操作，搭建mariadb数据库系统
+1. 在 server0 上安装 MariaDB 数据库系统
+1)安装 mariadb-server软件包
+2)启动 mariadb 服务
+
+
+案例3:在server上操作，配置一个数据库
+– 为mariadb数据库root设置登陆密码为 haxi
+– 新建一个数据库名为 nsd
+– 除了 root 用户,此数据库只能被用户 lisi 查询,此用户的密码为 123(用户的授权)
+– 数据库 nsd 中应该包含来自数据库复制的内容,
+数据库文件的 URL为:http://classroom/pub/materials/users.sql
+
+
+
+案例4:在server上操作，使用数据库查询
+
+1)密码是 solicitous 的人的名字?
+2)有多少人的姓名是 Barbara 同时居住在 Sunnyvale?
+3)在base表中追加记录  id为6，name为Barbara，password为900
+4)在location表中追加记录  id为6，city为Sunnyvale
+5)再次查询有多少人的姓名是 Barbara 同时居住在 Sunnyvale?
+
+案例5:虚拟机 server0操作， /dev/vdb 上按以下要求建立分区：
+
+采用默认的 msdos 分区模式 
+– 第1个分区 /dev/vdb1 的大小为 3G
+– 第2个分区 /dev/vdb2 的大小为 200M
+– 第3个分区 /dev/vdb3 的大小为 100M
+– 第4个分区 /dev/vdb4为扩展分区
+– 在划分三个分区逻辑分区/dev/vdb[5-6]，
+– 分区大小依次为500M、2000M
+
+
+案例6：发布iSCSI网络磁盘
+
+ 1）配置 server0 提供 iSCSI 服务，要求如下：
+ 2）磁盘名为iqn.2016-02.com.example:server0
+ 3）服务端口为 3260
+ 4）使用 iscsi_store（后端存储的名称） 作其后端卷，其大小为 3GiB
+ 5）此磁盘服务只能被 desktop0.example.com 访问，在Server0上配置客户端ACL为iqn.2016-02.com.example:desktop0
+ 6）配置 desktop0 使用 server0 提供 iSCSI 服务
+
+
+
+
+
+
+
+

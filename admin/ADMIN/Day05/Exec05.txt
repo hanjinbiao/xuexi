@@ -1,0 +1,70 @@
+案例练习,准备:
+            rht-vmctl  reset  classroom
+            rht-vmctl  reset  server
+	        rht-vmctl  reset  desktop
+######################################################
+
+案例1:为虚拟机 server 配置以下静态地址参数
+– 主机名:server0.example.com
+–IP地址:172.25.0.120
+– 子网掩码:255.255.255.0
+– 默认网关:172.25.0.254
+–DNS服务器:172.25.254.254
+
+
+
+案例2:指定yum软件源
+为 server0 指定可用的 yum 软件源
+– YUM软件库的地址为 http://classroom.example.com/content/rhel7.0/x86_64/dvd
+– 将此配置为虚拟机 server0 的默认软件仓库
+– 确认可用的仓库列表
+– 利用yum仓库安装system-config-kickstart 
+
+
+
+案例3:tar制作/释放归档压缩包（zcf、ztf、zxf、jcf、jtf、jxf、cf、tf）
+  首先创建/root/boothome/与/root/usrsbin/目录
+    1）备份/boot、/home这两个文件夹，保存为boothome.tar.gz文件
+    2）查看boothome.tar.gz文件内包含哪些内容 
+    3）将boothome.tar.gz释放到文件夹/root/boothome/下
+    4）备份/usr/sbin目录，保存为usrsbin.tar.bz2文件
+    5）查看usrsbin.tar.bz2文件内包含哪些内容
+    6）将usrsbin.tar.bz2释放到/root/usrsbin/文件夹下
+
+
+
+案例4：添加并测试用户账号
+    1）创建一个名为stu01的用户账号
+    2）检查/etc/passwd、/etc/shadow文件的最后一行
+    3）检查/home/新增加的宿主目录（家目录）
+    4）为用户stu01设置一个密码（123456）
+
+
+案例5：添加账号时设置不同属性
+    1）新建用户nsd01，宿主目录位于/opt/nsd01
+    2）新建系统账号sys01，将UID设为1234，登录Shell设为/sbin/nologin
+    3）为用户sys01设置密码，并测试是否能够登录
+    4）新建用户admin，将其基本组设为users，附加组设为adm、root
+
+案例6：passwd设置密码
+    1）给用户nsd01设置密码123456
+    2）采用--stdin方式将用户nsd01的密码设为654321
+
+案例7：usermod修改用户
+    1）新建一个用户nsd03，将宿主目录设为/opt/home03，并设置密码
+    2）设置nsd03密码为redhat
+    3）将用户nsd03的宿主目录改为/home/nsd03
+    4）将用户sys01的登录Shell改为/bin/bash
+
+案例8：组账号基本管理
+    1）新建组账号stugrp
+    2）为stugrp组添加三个成员用户（user01、root、zhangsan）
+    3）从stugrp组删除一个成员（user01）
+
+案例9：配置NTP网络时间客户端
+	配置虚拟机 server0，自动校对系统时间
+	NTP服务器位于 classroom.example.com 
+	此客户机的时间与NTP服务器的时间保持同步
+
+
+
