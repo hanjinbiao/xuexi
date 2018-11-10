@@ -1,1 +1,2 @@
-`[详细请点我查看WIKI](https://github.com/hanjinbiao/xuexi/wiki)`
+
+##### [详细请点我](https://github.com/hanjinbiao/xuexi/wiki)
